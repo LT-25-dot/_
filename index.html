@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MTR 到站時間查詢</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+    }
+    .section {
+      min-height: 100vh;
+      scroll-snap-align: start;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    #section1 {
+      padding: 12px;
+    }
+    #section2 {
+      padding: 12px;
+      background: #ffffff;
+    }
+    .back-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 6px 12px;
+      background: #c8102e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      z-index: 100;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: #a00d24; }
+    .back-to-map {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+    }
+    h1 { 
+      color: #c8102e; 
+      text-align: center; 
+      margin: 50px 0 0.3em; 
+      font-size: 1.6rem;
+    }
+    .subtitle { 
+      text-align: center; 
+      color: #555; 
+      margin-bottom: 0.3em; 
+      font-size: 0.95rem;
+    }
+    .controls { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 4px;
+      justify-content: center; 
+      margin: 1em 0; 
+    }
+    select, button { 
+      padding: 8px 12px;
+      font-size: 1rem; 
+      border-radius: 6px; 
+      border: 1px solid #ccc;
+    }
+    button { 
+      background: #c8102e; 
+      color: white; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: bold;
+    }
+    button:hover { background: #a00d24; }
+    button:disabled { background: #999; cursor: not-allowed; }
+    .status { 
+      text-align: center; 
+      margin: 0.8em 0; 
+      color: #555; 
+      min-height: 1.2em; 
+      font-size: 0.92rem; 
+    }
+    .route-title { 
+      font-size: 1.4rem;
+      margin: 1em 0 0.4em; 
+      color: #c8102e; 
+      text-align: center;
+    }
+    .bus-stop { 
+      background: white; 
+      border-radius: 8px; 
+      margin: 0.8em 0;
+      padding: 0.8em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+    }
+    .stop-name { 
+      font-size: 1.15rem;
+      font-weight: 600; 
+      margin: 0.3em 0 0.6em; 
+      color: #222; 
+    }
+    .bus-item { 
+      display: grid; 
+      grid-template-columns: 1.6fr 2.6fr 1fr;
+      gap: 6px; 
+      padding: 8px 0;
+      border-bottom: 1px solid #eee; 
+    }
+    .bus-item:last-child { border-bottom: none; }
+    .bus-time { 
+      font-size: 1.25rem;
+      font-weight: bold; 
+      color: #c8102e; 
+    }
+    .bus-info { 
+      color: #555; 
+      font-size: 0.88rem;
+      line-height: 1.35; 
+    }
+    .plat {
+      background: #c8102e;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-weight: bold;
+      font-size: 0.88rem;
+      text-align: center;
+      align-self: center;
+    }
+    .immediate { color: #d81b60; }
+    .footer-remark { 
+      margin-top: 1.8em; 
+      padding: 0.8em; 
+      background: #fff3cd; 
+      border-radius: 8px; 
+      font-size: 0.88rem; 
+      line-height: 1.4; 
+      color: #664d03; 
+    }
+    .error-msg { 
+      color: #c00; 
+      text-align: center; 
+      margin: 1.5em 0; 
+      font-size: 1rem; 
+    }
+    .no-service { 
+      text-align: center; 
+      color: #888; 
+      font-size: 1rem; 
+      padding: 2em 0;
+    }
+    .more-btn-container {
+      text-align: center;
+      margin: 1px 0 0;
+    }
+    .more-btn {
+      background: none;
+      border: none;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: #c8102e;
+      padding: 1px 0;
+      transition: opacity 0.2s;
+    }
+    .more-btn:hover { opacity: 0.7; }
+    .hidden-trains {
+      overflow: hidden;
+      transition: max-height 1.7s ease;
+      max-height: 0;
+    }
+    #map-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      margin: 0.8em 0;
+    }
+    #map {
+      flex: 1;
+      min-height: 400px; /* 確保有最小高度，避免某些情況下塌陷 */
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .map-note {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.3em;
+      padding-bottom: 1em;
+    }
+    @media (max-width: 560px) { 
+      #section1, #section2 { padding: 8px; }
+      h1 { font-size: 1.5rem; margin-top: 55px; }
+      .controls { gap: 6px; }
+      select, button { padding: 7px 10px; font-size: 0.95rem; }
+      .bus-item { 
+        grid-template-columns: 1fr; 
+        gap: 4px; 
+        padding: 7px 0; 
+      }
+      .bus-time { font-size: 1.3rem; margin-bottom: 2px; }
+      .plat { 
+        align-self: start; 
+        padding: 4px 8px; 
+        font-size: 0.85rem; 
+      }
+      .more-btn { font-size: 1.5rem; }
+      #map { min-height: 360px; }
+    }
+  </style>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+  <!-- 第一頁：地圖與選擇介面 -->
+  <div id="section1" class="section">
+    <a href="index.html" class="back-btn">← 返回</a> 
+    <h1>MTR 到站時間查詢</h1>
+
+    <div class="controls">
+      <select id="line">
+        <option value="">請選擇路線…</option>
+      </select>
+      <select id="sta" disabled>
+        <option value="">請先選擇路線</option>
+      </select>
+      <button id="btnQuery" disabled>查詢</button>
+      <button id="btnRefresh" disabled>重新整理</button>
+    </div>
+
+    <div class="status" id="status">請選擇路線及車站</div>
+
+    <div id="map-container">
+      <h2 class="route-title">MTR 全線站點地圖</h2>
+      <div id="map"></div>
+      <p class="map-note">點擊站點標記可直接查詢到站時間（藍點為您的位置，如允許定位）</p>
+    </div>
+  </div>
+
+  <!-- 第二頁：列車到站資訊 -->
+  <div id="section2" class="section">
+    <button class="back-btn back-to-map" onclick="document.getElementById('section1').scrollIntoView({behavior:'smooth'});">
+      ← 返回地圖
+    </button>
+    <div id="result">
+      <div class="no-service" style="padding-top: 120px;">
+        請在上方選擇路線及車站後按「查詢」<br>
+        <small>或直接點擊地圖上的站點標記</small>
+      </div>
+    </div>
+    <div class="footer-remark" id="footerRemark" style="display:none"></div>
+  </div>
+
+<script>
+const API_URL = "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php";
+
+const LINES = {
+  "AEL": { name: "機場快綫", stations: ["HOK","KOW","TSY","AIR","AWE"] },
+  "TCL": { name: "東涌綫", stations: ["HOK","KOW","OLY","NAC","LAK","TSY","SUN","TUC"] },
+  "TML": { name: "屯馬綫", stations: ["WKS","MOS","HEO","TSH","SHM","CIO","STW","CKT","TAW","HIK","DIH","KAT","SUW","TKW","HOM","HUH","ETS","AUS","NAC","MEF","TWW","KSR","YUL","LOP","TIS","SIH","TUM"] },
+  "TKL": { name: "將軍澳綫", stations: ["NOP","QUB","YAT","TIK","TKO","LHP","HAH","POA"] },
+  "EAL": { name: "東鐵綫", stations: ["ADM","EXC","HUH","MKK","KOT","TAW","SHT","FOT","RAC","UNI","TAP","TWO","FAN","SHS","LOW","LMC"] },
+  "SIL": { name: "南港島綫", stations: ["ADM","OCP","WCH","LET","SOH"] },
+  "TWL": { name: "荃灣綫", stations: ["CEN","ADM","TST","JOR","YMT","MOK","PRE","SSP","CSW","LCK","MEF","LAK","KWF","KWH","TWH","TSW"] },
+  "ISL": { name: "港島綫", stations: ["KET","HKU","SYP","SHW","CEN","ADM","WAC","CAB","TIH","FOH","NOP","QUB","TAK","SWH","SKW","HFC","CHW"] },
+  "KTL": { name: "觀塘綫", stations: ["WHA","HOM","YMT","MOK","PRE","SKM","KOT","LOF","WTS","DIH","CHH","KOB","NTK","KWT","LAT","YAT","TIK"] },
+  "DRL": { name: "迪士尼綫", stations: ["SUN","DIS"] }
+};
+
+const STATIONS = {
+  "HOK":"香港站","KOW":"九龍站","TSY":"青衣站","AIR":"機場站","AWE":"亞洲博覽館站",
+  "OLY":"奧運站","NAC":"南昌站","LAK":"荔景站","SUN":"欣澳站","TUC":"東涌站",
+  "WKS":"烏溪沙站","MOS":"馬鞍山站","HEO":"恆安站","TSH":"大水坑站","SHM":"石門站",
+  "CIO":"第一城站","STW":"沙田圍站","CKT":"車公廟站","TAW":"大圍站","HIK":"顯徑站",
+  "DIH":"鑽石山站","KAT":"啟德站","SUW":"宋皇臺站","TKW":"土瓜灣站","HOM":"何文田站",
+  "HUH":"紅磡站","ETS":"尖東站","AUS":"柯士甸站","MEF":"美孚站","TWW":"荃灣西站",
+  "KSR":"錦上路站","YUL":"元朗站","LOP":"朗屏站","TIS":"天水圍站","SIH":"兆康站",
+  "TUM":"屯門站","NOP":"北角站","QUB":"鰂魚涌站","YAT":"油塘站","TIK":"調景嶺站",
+  "TKO":"將軍澳站","LHP":"康城站","HAH":"坑口站","POA":"寶琳站",
+  "ADM":"金鐘站","EXC":"會展站","MKK":"旺角東站","KOT":"九龍塘站","SHT":"沙田站",
+  "FOT":"火炭站","RAC":"馬場站","UNI":"大學站","TAP":"大埔墟站","TWO":"太和站",
+  "FAN":"粉嶺站","SHS":"上水站","LOW":"羅湖站","LMC":"落馬洲站",
+  "OCP":"海洋公園站","WCH":"黃竹坑站","LET":"利東站","SOH":"海怡半島站",
+  "CEN":"中環站","TST":"尖沙咀站","JOR":"佐敦站","YMT":"油麻地站","MOK":"旺角站",
+  "PRE":"太子站","SSP":"深水埗站","CSW":"長沙灣站","LCK":"荔枝角站",
+  "KWF":"葵芳站","KWH":"葵興站","TWH":"大窩口站","TSW":"荃灣站",
+  "KET":"堅尼地城站","HKU":"香港大學站","SYP":"西營盤站","SHW":"上環站","WAC":"灣仔站",
+  "CAB":"銅鑼灣站","TIH":"天后站","FOH":"炮台山站","TAK":"太古站","SWH":"西灣河站",
+  "SKW":"筲箕灣站","HFC":"杏花邨站","CHW":"柴灣站",
+  "WHA":"黃埔站","SKM":"石硤尾站","LOF":"樂富站","WTS":"黃大仙站","CHH":"彩虹站",
+  "KOB":"九龍灣站","NTK":"牛頭角站","KWT":"觀塘站","LAT":"藍田站","DIS":"迪士尼站"
+};
+
+const STATION_COORDS = {
+  "ADM":[22.2790,114.1655],"AWE":[22.3214,113.9400],"AIR":[22.3133,113.9367],"AUS":[22.3049,114.1624],
+  "CAB":[22.2814,114.1858],"CEN":[22.2819,114.1582],"CHH":[22.3342,114.1967],"CHW":[22.2647,114.2375],
+  "CIO":[22.4253,114.2306],"CKT":[22.3728,114.1961],"CSW":[22.3375,114.1489],"DIH":[22.3417,114.2014],
+  "DIS":[22.3158,113.9456],"ETS":[22.2975,114.1722],"EXC":[22.2828,114.1731],"FAN":[22.4919,114.1397],
+  "FOH":[22.2917,114.1983],"FOT":[22.3947,114.2083],"HAH":[22.3142,114.2636],"HEO":[22.4114,114.2147],
+  "HFC":[22.2681,114.2369],"HIK":[22.3792,114.2083],"HOM":[22.3097,114.1875],"HOK":[22.2848,114.1581],
+  "HUH":[22.3056,114.1872],"JOR":[22.3053,114.1667],"KAT":[22.3292,114.1992],"KET":[22.2828,114.1278],
+  "KOB":[22.3231,114.2139],"KOT":[22.3369,114.1964],"KOW":[22.3047,114.1615],"KSR":[22.4348,114.0635],
+  "KWF":[22.3575,114.1278],"KWH":[22.3631,114.1319],"LAT":[22.3072,114.2264],"LAK":[22.3486,114.1261],
+  "LCK":[22.3372,114.1419],"LET":[22.2497,114.1958],"LHP":[22.3106,114.2653],"LOP":[22.4447,114.0389],
+  "LOW":[22.5283,114.1133],"LMC":[22.5145,114.0656],"MEF":[22.3379,114.1379],"MKK":[22.3131,114.1697],
+  "MOK":[22.3194,114.1692],"MOS":[22.4247,114.2342],"NAC":[22.3270,114.1536],"NOP":[22.2936,114.1983],
+  "NTK":[22.3153,114.2186],"OCP":[22.2486,114.1747],"OLY":[22.3178,114.1602],"POA":[22.3225,114.2597],
+  "PRE":[22.3328,114.1614],"QUB":[22.2861,114.2075],"RAC":[22.3997,114.2047],"SHM":[22.4036,114.2167],
+  "SHT":[22.3828,114.1875],"SHW":[22.2858,114.1575],"SIH":[22.4120,113.9789],"SKM":[22.3347,114.1864],
+  "SKW":[22.2789,114.2253],"SOH":[22.2428,114.1969],"SSP":[22.3344,114.1592],"STW":[22.3786,114.1967],
+  "SUN":[22.3318,113.9532],"SUW":[22.3203,114.1889],"SWH":[22.2861,114.2167],"SYP":[22.2853,114.1497],
+  "TAK":[22.2847,114.2181],"TAP":[22.4503,114.1694],"TAW":[22.3731,114.1789],"TIH":[22.2939,114.1931],
+  "TIK":[22.3103,114.2267],"TKO":[22.3072,114.2603],"TKW":[22.3139,114.1892],"TSH":[22.4056,114.2208],
+  "TSW":[22.3686,114.1133],"TSY":[22.3406,114.1039],"TUC":[22.2891,113.9415],"TUM":[22.3964,113.9792],
+  "TWH":[22.3708,114.1203],"TWO":[22.4442,114.1639],"UNI":[22.4131,114.2103],"WAC":[22.2797,114.1753],
+  "WCH":[22.2522,114.1828],"WHA":[22.3128,114.2072],"WKS":[22.4297,114.2417],"WTS":[22.3411,114.2042],
+  "YAT":[22.3131,114.2306],"YMT":[22.3133,114.1681],"YUL":[22.4458,114.0322],"TIS":[22.4481,114.0042],
+  "HKU":[22.2839,114.1353],"TWW":[22.3739,114.1119],"KWT":[22.3158,114.2258],"LOF":[22.3381,114.1870]
+};
+
+const AUTO_REFRESH_MS = 20000;
+
+const lineSelect = document.getElementById("line");
+const staSelect = document.getElementById("sta");
+const btnQuery = document.getElementById("btnQuery");
+const btnRefresh = document.getElementById("btnRefresh");
+const statusDiv = document.getElementById("status");
+const resultDiv = document.getElementById("result");
+const footerRemark = document.getElementById("footerRemark");
+
+let isQuerying = false;
+let currentLine = "";
+let currentSta = "";
+let autoTimer = null;
+let map = null;
+
+// 建立站點 ↔ 路線的反向映射
+const STATION_LINES = {};
+Object.keys(LINES).forEach(code => {
+  LINES[code].stations.forEach(sta => {
+    if (!STATION_LINES[sta]) STATION_LINES[sta] = [];
+    STATION_LINES[sta].push(code);
+  });
+});
+
+// 從地圖直接查詢
+function queryFromMap(line, sta) {
+  lineSelect.value = line;
+  populateStations();
+  staSelect.value = sta;
+  updateButtonState();
+  performQuery();
+  if (map) map.closePopup();
+}
+
+function updateButtonState() {
+  const hasLine = lineSelect.value;
+  const hasSta = staSelect.value;
+  staSelect.disabled = !hasLine;
+  btnQuery.disabled = !hasLine || !hasSta || isQuerying;
+  btnRefresh.disabled = isQuerying || !currentLine || !currentSta;
+}
+
+function populateLines() {
+  Object.keys(LINES).forEach(code => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = LINES[code].name;
+    lineSelect.appendChild(opt);
+  });
+}
+
+function populateStations() {
+  staSelect.innerHTML = '<option value="">請選擇車站…</option>';
+  const line = lineSelect.value;
+  if (!line) return;
+  LINES[line].stations.forEach(code => {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = STATIONS[code] || code;
+    staSelect.appendChild(opt);
+  });
+  updateButtonState();
+}
+
+async function performQuery() {
+  const line = lineSelect.value;
+  const sta = staSelect.value;
+
+  if (!line || !sta) return;
+
+  currentLine = line;
+  currentSta = sta;
+
+  isQuerying = true;
+  updateButtonState();
+  statusDiv.textContent = "正在查詢...";
+  resultDiv.innerHTML = "";
+  footerRemark.style.display = "none";
+
+  try {
+    const url = `${API_URL}?line=${line}&sta=${sta}&lang=TC`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`網絡錯誤 ${res.status}`);
+
+    const json = await res.json();
+
+    if (json.status != 1) {
+      throw new Error(json.message || "API 錯誤（特殊服務安排或無資料）");
+    }
+
+    const dataKeys = Object.keys(json.data || {});
+    if (dataKeys.length === 0) throw new Error("無車站資料");
+
+    const key = dataKeys[0];
+    const block = json.data[key];
+
+    if (!block) throw new Error("無車站資料");
+
+    renderResult(block, line, sta, json);
+    statusDiv.textContent = `最後更新：${json.curr_time || json.sys_time || "—"}`;
+
+    let remark = "";
+    if (json.sys_time) remark += `系統時間：${json.sys_time} `;
+    if (json.curr_time) remark += `當前時間：${json.curr_time} `;
+    if (json.isdelay) {
+      const delayText = json.isdelay === "Y" ? "有延誤" : "正常";
+      remark += `狀態：${delayText}`;
+    }
+    if (json.message && !remark.includes(json.message)) remark += `<br>${json.message}`;
+    if (remark) {
+      footerRemark.innerHTML = remark;
+      footerRemark.style.display = "block";
+    }
+
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = setInterval(performQuery, AUTO_REFRESH_MS);
+
+  } catch (err) {
+    console.error(err);
+    resultDiv.innerHTML = `<div class="error-msg">查詢失敗<br>${err.message}</div>`;
+    if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  } finally {
+    isQuerying = false;
+    updateButtonState();
+    document.getElementById('section2').scrollIntoView({ behavior: 'smooth' });
+  }
+} 
+
+function renderResult(block, lineCode, staCode, json) {
+  const lineName = LINES[lineCode].name;
+  const staName = STATIONS[staCode] || staCode;
+
+  const title = `${lineName} — ${staName} 到站時間`;
+
+  let html = `<h2 class="route-title">${title}</h2>`;
+
+  const directions = [{ key: "UP" }, { key: "DOWN" }];
+
+  let hasAnyTrain = false;
+
+  directions.forEach(dir => {
+    const trains = (block[dir.key] || []).slice(0, 10);
+
+    if (trains.length === 0) return;
+
+    hasAnyTrain = true;
+
+    const uniqueDestCodes = [...new Set(trains.map(t => t.dest).filter(d => d))];
+    const uniqueDestNames = uniqueDestCodes
+      .map(code => STATIONS[code] || code)
+      .filter(name => name !== "未知");
+
+    let dirName = uniqueDestNames.length > 0 ? uniqueDestNames.join(' / ') : "未知方向";
+    dirName = `往 ${dirName}`;
+
+    html += `<div class="bus-stop">
+      <div class="stop-name">${dirName}</div>`;
+
+    const visibleTrains = trains.slice(0, 2);
+    const hiddenTrains = trains.slice(2);
+
+    visibleTrains.forEach(t => {
+      let ttnt = Number(t.ttnt || 0);
+      let timeDisplay = ttnt <= 0 ? "即將到站" : `${ttnt} 分鐘`;
+      const isImmediate = ttnt <= 0;
+
+      const destName = STATIONS[t.dest] || t.dest || "未知";
+      const fullTime = t.time || "-";
+      const platNum = t.plat || "-";
+
+      html += `
+        <div class="bus-item">
+          <div class="bus-time${isImmediate ? " immediate" : ""}">${timeDisplay}</div>
+          <div class="bus-info">
+            目的地：${destName} | 時間：${fullTime}
+          </div>
+          <div class="plat">月台 ${platNum}</div>
+        </div>`;
+    });
+
+    if (hiddenTrains.length > 0) {
+      html += `<div class="hidden-trains">`;
+      hiddenTrains.forEach(t => {
+        let ttnt = Number(t.ttnt || 0);
+        let timeDisplay = ttnt <= 0 ? "即將到站" : `${ttnt} 分鐘`;
+        const isImmediate = ttnt <= 0;
+
+        const destName = STATIONS[t.dest] || t.dest || "未知";
+        const fullTime = t.time || "-";
+        const platNum = t.plat || "-";
+
+        html += `
+          <div class="bus-item">
+            <div class="bus-time${isImmediate ? " immediate" : ""}">${timeDisplay}</div>
+            <div class="bus-info">
+              目的地：${destName} | 時間：${fullTime}
+            </div>
+            <div class="plat">月台 ${platNum}</div>
+          </div>`;
+      });
+      html += `</div>`;
+
+      html += `
+        <div class="more-btn-container">
+          <button class="more-btn" onclick="toggleMore(this)">▼</button>
+        </div>`;
+    }
+
+    html += `</div>`;
+  });
+
+  if (!hasAnyTrain) {
+    html += `<div class="no-service">
+      暫無即將到站的列車<br>
+      <small>可能為尾班車後或有特別安排</small>
+    </div>`;
+  }
+
+  resultDiv.innerHTML = html;
+}
+
+function toggleMore(btn) {
+  const hiddenDiv = btn.parentNode.previousElementSibling;
+  if (!hiddenDiv || !hiddenDiv.classList.contains('hidden-trains')) return;
+
+  if (hiddenDiv.style.maxHeight === '0px' || !hiddenDiv.style.maxHeight) {
+    hiddenDiv.style.maxHeight = hiddenDiv.scrollHeight + 'px';
+    btn.textContent = '▲';
+  } else {
+    hiddenDiv.style.maxHeight = hiddenDiv.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      hiddenDiv.style.maxHeight = '0px';
+    });
+    btn.textContent = '▼';
+  }
+}
+
+// 初始化地圖
+function initMap() {
+  map = L.map('map').setView([22.3193, 114.1694], 11);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 加入所有站點標記
+  Object.keys(STATIONS).forEach(code => {
+    const coord = STATION_COORDS[code];
+    if (!coord) return;
+
+    const marker = L.marker(coord).addTo(map);
+    const name = STATIONS[code];
+    const lines = STATION_LINES[code] || [];
+
+    let popupContent = `<strong>${name}</strong><br>代碼：${code}<br>路線：${lines.map(l => LINES[l].name).join('、') || '未知'}`;
+    if (lines.length > 0) {
+      popupContent += `<div style="margin-top:8px;text-align:center;">`;
+      lines.forEach(l => {
+        popupContent += `<button onclick="queryFromMap('${l}','${code}')" style="margin:4px;padding:4px 8px;font-size:0.9rem;">查詢 ${LINES[l].name}</button><br>`;
+      });
+      popupContent += `</div>`;
+    }
+    marker.bindPopup(popupContent);
+  });
+
+  // 用戶位置
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const userIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+      L.marker([pos.coords.latitude, pos.coords.longitude], {icon: userIcon})
+       .addTo(map)
+       .bindPopup('<strong>您的位置</strong>')
+       .openPopup();
+      map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+    }, () => {
+      // 未允許定位時不顯示錯誤
+    });
+  }
+}
+
+// 事件綁定與初始化
+lineSelect.addEventListener("change", populateStations);
+staSelect.addEventListener("change", updateButtonState);
+btnQuery.addEventListener("click", performQuery);
+btnRefresh.addEventListener("click", performQuery);
+
+populateLines();
+initMap();
+
+// 確保一開始停留在第一頁
+window.scrollTo(0, 0);
+</script>
+</body>
+</html>
