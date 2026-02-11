@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <title>輕鐵即時到站查詢</title>
+  <style>
+
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Light Rail Next Train — 美化版</title>
+
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Light Rail — 完整路線選站查詢</title>
+
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Light Rail — Styled Next Train</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b1220; --panel:#071427; --card:#0f2130; --muted:#9fb0c8;
+    --accent-1:#00c2a8; --accent-2:#6ea8fe; --glass:rgba(255,255,255,0.03);
+    --glass-2:rgba(255,255,255,0.02); --radius:14px;
+    --text:#e6eef8; --soft:#bcd6ee;
+  }
+  [data-theme="light"]{
+    --bg:#f5f9ff; --panel:#ffffff; --card:#ffffff; --muted:#55707f;
+    --accent-1:#0078D4; --accent-2:#00b37a; --glass:rgba(2,6,23,0.03);
+    --glass-2:rgba(2,6,23,0.02); --text:#05232f; --soft:#2a4956;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter, "Segoe UI", Roboto, "Noto Sans TC", "Microsoft JhengHei", Arial;
+    background:linear-gradient(180deg,var(--bg), #021623 60%); color:var(--text); min-height:100vh;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+
+  .app{
+    max-width:1200px; margin:28px auto; padding:18px; display:grid; grid-template-columns:320px 1fr; gap:18px;
+  }
+
+  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .logo{
+    width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#031426;font-size:20px;box-shadow:0 8px 30px rgba(2,6,23,0.35);
+  }
+  h1{margin:0;font-size:18px}
+  .subtitle{margin:0;color:var(--muted);font-size:13px}
+
+  /* left panel */
+  .panel{
+    background:var(--panel); border-radius:var(--radius); padding:14px; border:1px solid var(--glass);
+    box-shadow: 0 8px 30px rgba(2,6,23,0.45);
+    height:calc(100vh - 96px); overflow:auto;
+  }
+  .control-row{display:flex;gap:8px;align-items:center}
+  input[type="search"], select, button{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--glass);
+    background:transparent; color:var(--text); font-size:14px;
+  }
+  .routes{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .route-card{
+    display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent); border:1px solid var(--glass);
+    cursor:pointer; transition:transform .12s ease, box-shadow .12s;
+  }
+  .route-card:hover{transform:translateY(-4px); box-shadow: 0 12px 30px rgba(2,6,23,0.35)}
+  .badge{width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#052a34}
+  .meta{flex:1;display:flex;flex-direction:column}
+  .meta b{font-size:14px}
+  .meta .desc{font-size:12px;color:var(--muted);margin-top:4px}
+  .star{width:36px;height:36;border-radius:8px;display:grid;place-items:center;border:1px solid var(--glass);cursor:pointer}
+
+  /* main area */
+  .main{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border-radius:var(--radius); padding:14px; border:1px solid var(--glass-2); min-height:60vh}
+  .controls{display:flex;gap:10px;align-items:end}
+  label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+  .station-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
+  .station-card{padding:12px;border-radius:10px;background:linear-gradient(90deg, rgba(255,255,255,0.01), transparent); border:1px solid var(--glass); display:flex;flex-direction:column; gap:8px; transition:transform .12s}
+  .station-card:hover{transform:translateY(-6px)}
+  .station-name{font-weight:700}
+  .station-meta{color:var(--muted);font-size:13px}
+  .actions{display:flex;gap:8px;margin-top:8px}
+  .btn{padding:8px 10px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:#042a2a;font-weight:700;cursor:pointer}
+  .btn.secondary{background:transparent;border:1px solid var(--glass)}
+  .result{margin-top:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.12)); border:1px solid var(--glass)}
+  .platform{padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:10px}
+  .route-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px}
+
+  /* header controls */
+  .top-controls{display:flex;gap:12px;margin-left:auto;align-items:center}
+  .theme-toggle{padding:8px 10px;border-radius:10px;border:1px solid var(--glass);cursor:pointer;background:transparent;color:var(--text)}
+
+  /* small screens */
+  @media (max-width:980px){
+    .app{grid-template-columns:1fr; padding:12px}
+    .panel{height:auto}
+  }
+
+  /* subtle animations */
+  .fade-in{animation:fadeIn .28s ease both}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+</style>
+</head>
+<body data-theme="dark">
+  <div class="app">
+    <div>
+      <header>
+        <div class="logo">LR</div>
+        <div>
+          <h1>Light Rail — Next Train</h1>
+
+
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Light Rail — Styled Next Train</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b1220; --panel:#071427; --card:#0f2130; --muted:#9fb0c8;
+    --accent-1:#00c2a8; --accent-2:#6ea8fe; --glass:rgba(255,255,255,0.03);
+    --glass-2:rgba(255,255,255,0.02); --radius:14px;
+    --text:#e6eef8; --soft:#bcd6ee;
+  }
+  [data-theme="light"]{
+    --bg:#f5f9ff; --panel:#ffffff; --card:#ffffff; --muted:#55707f;
+    --accent-1:#0078D4; --accent-2:#00b37a; --glass:rgba(2,6,23,0.03);
+    --glass-2:rgba(2,6,23,0.02); --text:#05232f; --soft:#2a4956;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter, "Segoe UI", Roboto, "Noto Sans TC", "Microsoft JhengHei", Arial;
+    background:linear-gradient(180deg,var(--bg), #021623 60%); color:var(--text); min-height:100vh;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+
+  .app{
+    max-width:1200px; margin:28px auto; padding:18px; display:grid; grid-template-columns:320px 1fr; gap:18px;
+  }
+
+  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .logo{
+    width:60px;height:60px;border-radius:12px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#031426;font-size:20px;box-shadow:0 8px 30px rgba(2,6,23,0.35);
+  }
+  h1{margin:0;font-size:18px}
+  .subtitle{margin:0;color:var(--muted);font-size:13px}
+
+  /* left panel */
+  .panel{
+    background:var(--panel); border-radius:var(--radius); padding:14px; border:1px solid var(--glass);
+    box-shadow: 0 8px 30px rgba(2,6,23,0.45);
+    height:calc(100vh - 96px); overflow:auto;
+  }
+  .control-row{display:flex;gap:8px;align-items:center}
+  input[type="search"], select, button{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--glass);
+    background:transparent; color:var(--text); font-size:14px;
+  }
+  .routes{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .route-card{
+    display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent); border:1px solid var(--glass);
+    cursor:pointer; transition:transform .12s ease, box-shadow .12s;
+  }
+  .route-card:hover{transform:translateY(-4px); box-shadow: 0 12px 30px rgba(2,6,23,0.35)}
+  .badge{width:56px;height:56px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#052a34}
+  .meta{flex:1;display:flex;flex-direction:column}
+  .meta b{font-size:14px}
+  .meta .desc{font-size:12px;color:var(--muted);margin-top:4px}
+  .star{width:36px;height:36;border-radius:8px;display:grid;place-items:center;border:1px solid var(--glass);cursor:pointer}
+
+  /* main area */
+  .main{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); border-radius:var(--radius); padding:14px; border:1px solid var(--glass-2); min-height:60vh}
+  .controls{display:flex;gap:10px;align-items:end}
+  label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+  .station-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
+  .station-card{padding:12px;border-radius:10px;background:linear-gradient(90deg, rgba(255,255,255,0.01), transparent); border:1px solid var(--glass); display:flex;flex-direction:column; gap:8px; transition:transform .12s}
+  .station-card:hover{transform:translateY(-6px)}
+  .station-name{font-weight:700}
+  .station-meta{color:var(--muted);font-size:13px}
+  .actions{display:flex;gap:8px;margin-top:8px}
+  .btn{padding:8px 10px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:#042a2a;font-weight:700;cursor:pointer}
+  .btn.secondary{background:transparent;border:1px solid var(--glass)}
+  .result{margin-top:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.12)); border:1px solid var(--glass)}
+  .platform{padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:10px}
+  .route-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px}
+
+  /* header controls */
+  .top-controls{display:flex;gap:12px;margin-left:auto;align-items:center}
+  .theme-toggle{padding:8px 10px;border-radius:10px;border:1px solid var(--glass);cursor:pointer;background:transparent;color:var(--text)}
+
+  /* small screens */
+  @media (max-width:980px){
+    .app{grid-template-columns:1fr; padding:12px}
+    .panel{height:auto}
+  }
+
+  /* subtle animations */
+  .fade-in{animation:fadeIn .28s ease both}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+</style>
+</head>
+<body data-theme="dark">
+  <div class="app">
+    <div>
+      <header>
+        <div class="logo">LR</div>
+        <div>
+          <h1>Light Rail — Next Train</h1>
+          <p class="subtitle">漂亮的 UI、主題切換與互動式選站查詢</p>
+        </div>
+        <div class="top-controls" style="margin-left:auto">
+          <button id="themeBtn" class="theme-toggle" aria-pressed="false">切換主題</button>
+        </div>
+      </header>
+
+      <div class="panel" role="navigation" aria-label="routes panel">
+        <div style="display:flex;gap:8px">
+          <input id="routeSearch" type="search" placeholder="搜尋路線或目的地（例如 505 / 元朗）" aria-label="search routes">
+          <button id="clearSearch" class="btn secondary" title="清除">清</button>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <select id="routeSelect" aria-label="select route"></select>
+          <select id="dirSelect" aria-label="direction">
+            <option value="fwd">去程</option><option value="rev">回程</option>
+          </select>
+        </div>
+
+        <div class="routes" id="routesContainer" aria-live="polite"></div>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button id="showFav" class="btn secondary">我的收藏</button>
+          <button id="resetFav" class="btn secondary">清除收藏</button>
+        </div>
+
+        <div style="margin-top:12px;color:var(--muted);font-size:13px">點選路線卡載入站點。點擊星號把該路線第一站加入收藏。</div>
+      </div>
+    </div>
+
+    <main class="main" role="main">
+      <div style="display:flex;align-items:flex-end;gap:12px">
+        <div style="flex:1">
+          <label for="stationFilter">在此路線搜尋站點</label>
+          <input id="stationFilter" placeholder="輸入站名或 station_id 篩選" aria-label="station filter">
+        </div>
+
+        <div style="width:120px">
+          <label for="langSelect">語言</label>
+          <select id="langSelect"><option value="ch">中文</option><option value="en">English</option></select>
+        </div>
+
+        <div style="width:140px">
+          <label style="opacity:0">查詢</label>
+          <button id="queryBtn" class="btn">查詢下一班車</button>
+        </div>
+      </div>
+
+      <div class="station-grid" id="stationGrid" style="margin-top:12px" aria-live="polite">
+        <!-- station cards injected here -->
+      </div>
+
+      <div class="result" id="resultArea">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <strong id="statusText">尚未查詢</strong>
+            <div id="sysTime" style="color:var(--muted);font-size:13px"></div>
+          </div>
+          <div id="loader" style="min-width:40px"></div>
+        </div>
+
+        <div id="result" style="margin-top:12px"></div>
+
+        <details style="margin-top:12px;color:var(--muted)"><summary>回傳原始 JSON</summary>
+          <pre id="rawJson" style="max-height:200px;overflow:auto">{ }</pre>
+        </details>
+      </div>
+    </main>
+  </div>
+
+<script>
+  // full station table (from earlier)
+  const stations = {
+    1:{ch:"屯門碼頭",en:"Tuen Mun Ferry Pier"},10:{ch:"美樂",en:"Melody Garden"},15:{ch:"蝴蝶",en:"Butterfly"},
+    20:{ch:"輕鐵車廠",en:"Light Rail Depot"},30:{ch:"龍門",en:"Lung Mun"},40:{ch:"青山村",en:"Tsing Shan Tsuen"},
+    50:{ch:"青雲",en:"Tsing Wun"},60:{ch:"建安",en:"Kin On"},70:{ch:"河田",en:"Ho Tin"},75:{ch:"蔡意橋",en:"Choy Yee Bridge"},
+    80:{ch:"澤豐",en:"Affluence"},90:{ch:"屯門醫院",en:"Tuen Mun Hospital"},100:{ch:"兆康",en:"Siu Hong"},
+    110:{ch:"麒麟",en:"Kei Lun"},120:{ch:"青松",en:"Ching Chung"},130:{ch:"建生",en:"Kin Sang"},140:{ch:"田景",en:"Tin King"},
+    150:{ch:"良景",en:"Leung King"},160:{ch:"新圍",en:"San Wai"},170:{ch:"石排",en:"Shek Pai"},180:{ch:"山景 (北)",en:"Shan King (North)"},
+    190:{ch:"山景 (南)",en:"Shan King (South)"},200:{ch:"鳴琴",en:"Ming Kum"},212:{ch:"大興 (北)",en:"Tai Hing (North)"},
+    220:{ch:"大興 (南)",en:"Tai Hing (South)"},230:{ch:"銀圍",en:"Ngan Wai"},240:{ch:"兆禧",en:"Siu Hei"},
+    250:{ch:"屯門泳池",en:"Tuen Mun Swimming Pool"},260:{ch:"豐景園",en:"Goodview Garden"},265:{ch:"兆麟",en:"Siu Lun"},
+    270:{ch:"安定",en:"On Ting"},275:{ch:"友愛",en:"Yau Oi"},280:{ch:"市中心",en:"Town Centre"},295:{ch:"屯門",en:"Tuen Mun"},
+    300:{ch:"杯渡",en:"Pui To"},310:{ch:"何福堂",en:"Hoh Fuk Tong"},320:{ch:"新墟",en:"San Hui"},330:{ch:"景峰",en:"Prime View"},
+    340:{ch:"鳳地",en:"Fung Tei"},350:{ch:"藍地",en:"Lam Tei"},360:{ch:"泥圍",en:"Nai Wai"},370:{ch:"鍾屋村",en:"Chung Uk Tsuen"},
+    380:{ch:"洪水橋",en:"Hung Shui Kiu"},390:{ch:"塘坊村",en:"Tong Fong Tsuen"},400:{ch:"屏山",en:"Ping Shan"},
+    425:{ch:"坑尾村",en:"Hang Mei Tsuen"},430:{ch:"天水圍",en:"Tin Shui Wai"},435:{ch:"天慈",en:"Tin Tsz"},
+    445:{ch:"天耀",en:"Tin Yiu"},448:{ch:"樂湖",en:"Locwood"},450:{ch:"天湖",en:"Tin Wu"},455:{ch:"銀座",en:"Ginza"},
+    460:{ch:"天瑞",en:"Tin Shui"},468:{ch:"頌富",en:"Chung Fu"},480:{ch:"天富",en:"Tin Fu"},490:{ch:"翠湖",en:"Chestwood"},
+    500:{ch:"天榮",en:"Tin Wing"},510:{ch:"天悅",en:"Tin Yuet"},520:{ch:"天秀",en:"Tin Sau"},530:{ch:"濕地公園",en:"Wetland Park"},
+    540:{ch:"天恒",en:"Tin Heng"},550:{ch:"天逸",en:"Tin Yat"},560:{ch:"水邊圍",en:"Shui Pin Wai"},570:{ch:"豐年路",en:"Fung Nin Road"},
+    580:{ch:"康樂路",en:"Hong Lok Road"},590:{ch:"大棠路",en:"Tai Tong Road"},600:{ch:"元朗",en:"Yuen Long"},920:{ch:"三聖",en:"Sam Shing"}
+  };
+
+  // routes (already populated earlier, shortened where suitable)
+  const routes = {
+    "505":{name:"505 三聖 ⇄ 兆康", color:"#f97316", fwd:[920,265,270,280,295,60,190,180,200,170,160,150,140,130,120,110,100], rev:[100,110,120,130,140,150,160,170,200,180,190,60,295,280,270,265,920]},
+    "507":{name:"507 屯門碼頭 ⇄ 田景", color:"#06b6d4", fwd:[1,240,250,260,265,270,280,295,70,75,230,220,212,160,150,140], rev:[140,150,160,212,220,230,75,70,295,280,270,265,260,250,240,1]},
+    "610":{name:"610 屯門碼頭 ⇄ 元朗", color:"#60a5fa", fwd:[1,10,15,20,30,40,50,200,170,360,370,380,390,400,560,570,580,590,600], rev:[600,590,580,570,560,400,390,380,370,360,170,200,50,40,30,20,15,10,1]},
+    "614":{name:"614 屯門碼頭 ⇄ 元朗", color:"#a78bfa", fwd:[1,240,250,260,265,270,320,330,340,100,350,360,370,380,390,400,560,570,580,590,600], rev:[600,590,580,570,560,400,390,380,370,360,350,100,340,330,320,270,265,260,250,240,1]},
+    "615":{name:"615 屯門碼頭 ⇄ 元朗", color:"#34d399", fwd:[1,10,15,20,30,40,50,200,170,360,370,380,390,400,560,570,580,590,600], rev:[600,590,580,570,560,400,390,380,370,360,170,200,50,40,30,20,15,10,1]},
+    "614P":{name:"614P 屯門碼頭 ⇄ 兆康", color:"#fb7185", fwd:[1,240,250,260,265,270,320,330,340,100], rev:[100,340,330,320,270,265,260,250,240,1]},
+    "615P":{name:"615P 屯門碼頭 ⇄ 兆康", color:"#f59e0b", fwd:[1,10,15,20,30,40,50,200,170,360,370,380,390,400,560,570,580,590,100], rev:[100,590,580,570,560,400,390,380,370,360,170,200,50,40,30,20,15,10,1]},
+    "705":{name:"705 天水圍循環（逆時針）", color:"#60a5fa", fwd:[430,435,450,455,500,510,520,530,540,550,480,468,460,448,445], rev:[430,445,448,460,468,480,550,540,530,520,510,500,455,450,435]},
+    "706":{name:"706 天水圍循環（順時針）", color:"#7c3aed", fwd:[430,445,448,460,468,480,550,540,530,520,510,500,455,450,435], rev:[430,435,450,455,500,510,520,530,540,550,480,468,460,448,445]},
+    "751":{name:"751 友愛 ⇄ 天逸", color:"#06b6d4", fwd:[275,270,280,295,70,75,80,90,100,350,360,370,380,425,430,435,450,460,468,550], rev:[550,468,460,450,435,430,425,380,370,360,350,100,90,80,75,70,295,280,270,275]},
+    "761P":{name:"761P 天逸 ⇄ 元朗", color:"#ef4444", fwd:[600,590,580,570,560,400,390,380,370,330,320,300,240,1,550], rev:[550,1,240,300,320,330,370,380,390,400,560,570,580,590,600]},
+    "506P":{name:"506P（特別）", color:"#94a3b8", fwd:[1,10,50,60,300,100], rev:[]},
+    "507P":{name:"507P（特別）", color:"#94a3b8", fwd:[100,120,130,140,1], rev:[]},
+    "751P":{name:"751P（特別）", color:"#94a3b8", fwd:[550,430], rev:[430,550]},
+    "720":{name:"720（平日特班）", color:"#94a3b8", fwd:[100,500], rev:[]}
+  };
+
+  const apiBase = "https://rt.data.gov.hk/v1/transport/mtr/lrt/getSchedule";
+  const routesContainer = document.getElementById("routesContainer");
+  const routeSelect = document.getElementById("routeSelect");
+  const dirSelect = document.getElementById("dirSelect");
+  const stationGrid = document.getElementById("stationGrid");
+  const stationFilter = document.getElementById("stationFilter");
+  const routeSearch = document.getElementById("routeSearch");
+  const queryBtn = document.getElementById("queryBtn");
+  const langSelect = document.getElementById("langSelect");
+  const statusText = document.getElementById("statusText");
+  const sysTime = document.getElementById("sysTime");
+  const resultDiv = document.getElementById("result");
+  const rawJson = document.getElementById("rawJson");
+  const themeBtn = document.getElementById("themeBtn");
+  const showFav = document.getElementById("showFav");
+  const resetFav = document.getElementById("resetFav");
+  const clearSearch = document.getElementById("clearSearch");
+
+  let favorites = JSON.parse(localStorage.getItem("lrt_favs")||"[]");
+  let currentRoute = Object.keys(routes)[0];
+
+  // helpers
+  function stationLabel(id){ const s = stations[id]; return s ? `${s.ch} — ${s.en} (id:${id})` : `id:${id}`; }
+  function saveFavs(){ localStorage.setItem("lrt_favs", JSON.stringify(favorites)); renderFavBadge(); }
+  function renderFavBadge(){ /* optional visual update for favorites */ }
+
+  // populate route select and left cards
+  function initRoutes(filter=""){
+    routeSelect.innerHTML = "";
+    routesContainer.innerHTML = "";
+    Object.keys(routes).forEach(k=>{
+      const r = routes[k];
+      if(filter && !(`${k} ${r.name}`.toLowerCase().includes(filter.toLowerCase()))) return;
+      // select option
+      const opt = document.createElement("option");
+      opt.value = k; opt.textContent = `${k} ${r.name}`; routeSelect.appendChild(opt);
+      // card
+      const card = document.createElement("div");
+      card.className = "route-card fade-in";
+      card.dataset.key = k;
+      const badge = document.createElement("div");
+      badge.className = "badge"; badge.style.background = `linear-gradient(135deg, ${r.color}, rgba(255,255,255,0.06))`;
+      badge.innerHTML = `<div style="color:white">${k}</div>`;
+      const meta = document.createElement("div"); meta.className = "meta";
+      meta.innerHTML = `<b>${r.name}</b><div class="desc">路線編號 ${k}</div>`;
+      const star = document.createElement("button"); star.className = "star"; star.innerText = "☆"; star.title="收藏此路線第一站";
+      star.addEventListener("click",(e)=>{ e.stopPropagation(); const first = (r.fwd && r.fwd[0])||null; if(first && !favorites.includes(first)){ favorites.push(first); saveFavs(); alert('已收藏站：'+stationLabel(first)); }});
+      card.appendChild(badge); card.appendChild(meta); card.appendChild(star);
+      card.addEventListener("click",()=>{ currentRoute = k; routeSelect.value = k; renderStations(); });
+      routesContainer.appendChild(card);
+    });
+    routeSelect.value = currentRoute;
+  }
+
+  function renderStations(){
+    stationGrid.innerHTML = "";
+    const dir = dirSelect.value === "rev" ? "rev" : "fwd";
+    const seq = routes[currentRoute][dir] && routes[currentRoute][dir].length ? routes[currentRoute][dir] : (routes[currentRoute].fwd||[]);
+    const q = (stationFilter.value||"").trim().toLowerCase();
+    seq.forEach(id=>{
+      const s = stations[id] || {ch:`站 ${id}`,en:""};
+      const label = `${s.ch} ${s.en} ${id}`.toLowerCase();
+      if(q && !label.includes(q) && !String(id).includes(q)) return;
+      const card = document.createElement("div"); card.className = "station-card fade-in";
+      const name = document.createElement("div"); name.className = "station-name"; name.textContent = s.ch;
+      const meta = document.createElement("div"); meta.className = "station-meta"; meta.textContent = `${s.en} · id:${id}`;
+      const actions = document.createElement("div"); actions.className = "actions";
+      const qbtn = document.createElement("button"); qbtn.className = "btn"; qbtn.innerText="查詢"; qbtn.dataset.id = id;
+      const fav = document.createElement("button"); fav.className = "btn secondary"; fav.innerText = favorites.includes(id)?"已收藏":"收藏"; fav.dataset.id = id;
+      actions.appendChild(qbtn); actions.appendChild(fav);
+      card.appendChild(name); card.appendChild(meta); card.appendChild(actions);
+      stationGrid.appendChild(card);
+      qbtn.addEventListener("click",()=>doQuery(id));
+      fav.addEventListener("click",()=>{
+        const idn = Number(fav.dataset.id);
+        if(favorites.includes(idn)){ favorites = favorites.filter(x=>x!==idn); fav.innerText = "收藏"; } else { favorites.push(idn); fav.innerText = "已收藏"; }
+        saveFavs();
+      });
+    });
+    if(stationGrid.children.length===0){ stationGrid.innerHTML = `<div style="color:var(--muted)">此路線/方向沒有符合的站點</div>`}
+  }
+
+  async function doQuery(stationId){
+    statusText.innerText = `查詢 ${stationLabel(stationId)}`;
+    resultDiv.innerHTML = ""; rawJson.textContent = "{}"; sysTime.innerText = "查詢中…";
+    document.getElementById("loader").innerHTML = `<svg width="24" height="24" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g transform="translate(1 1)" stroke-width="2"><circle stroke="rgba(255,255,255,0.12)" cx="18" cy="18" r="18"/><path d="M36 18c0-9.94-8.06-18-18-18" stroke="white"><animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="1s" repeatCount="indefinite"/></path></g></g></svg>`;
+    try{
+      const resp = await fetch(`${apiBase}?station_id=${encodeURIComponent(stationId)}`);
+      const text = await resp.text();
+      let data;
+      try{ data = JSON.parse(text); } catch(e){ data = { raw:text }; }
+      rawJson.textContent = JSON.stringify(data,null,2);
+      if(!resp.ok){
+        sysTime.innerText = `錯誤：HTTP ${resp.status}`;
+        resultDiv.innerHTML = `<div style="color:#ffb4a2;font-weight:700">${data && data.title ? data.title : '伺服器錯誤'}</div>`;
+      } else {
+        renderResult(data);
+      }
+    }catch(err){
+      sysTime.innerText = "網絡錯誤";
+      resultDiv.innerHTML = `<div style="color:#ffb4a2">${String(err)}</div>`;
+    } finally { document.getElementById("loader").innerHTML = ""; }
+  }
+
+  function renderResult(data){
+    if(!data || !Array.isArray(data.platform_list)){ resultDiv.innerHTML = `<div style="color:var(--muted)">無資料</div>`; return;}
+    sysTime.innerText = `系統時間：${data.system_time || '未知'}`;
+    const lang = langSelect.value === "en" ? "en":"ch";
+    resultDiv.innerHTML = data.platform_list.map(p=>{
+      const lines = (p.route_list||[]).map(r=>{
+        const dest = lang==='en'? (r.dest_en||'-') : (r.dest_ch||'-');
+        const time = lang==='en'? (r.time_en||'-') : (r.time_ch||'-');
+        const ad = r.arrival_departure==='A' ? (lang==='en'?'Arriving':'抵達') : (lang==='en'?'Departing':'離開');
+        return `<div class="route-row"><div><strong>${escapeHtml(dest)}</strong><div style="color:var(--muted);font-size:12px">${escapeHtml(r.route_no||'')}</div></div><div style="text-align:right"><div style="color:var(--accent-1);font-weight:800">${escapeHtml(time)}</div><div style="color:var(--muted);font-size:12px">${escapeHtml(ad)}</div></div></div>`;
+      }).join('');
+      return `<div class="platform"><strong>平台 ${p.platform_id}</strong>${lines||'<div style="color:var(--muted)">暫無列車</div>'}</div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // theme toggle
+  themeBtn.addEventListener("click", ()=>{
+    const body = document.body;
+    const isDark = body.getAttribute("data-theme") === "dark";
+    body.setAttribute("data-theme", isDark ? "light" : "dark");
+    themeBtn.innerText = isDark ? "深色模式" : "淺色模式";
+    themeBtn.setAttribute("aria-pressed", String(!isDark));
+  });
+
+  // interactions
+  document.addEventListener("DOMContentLoaded", ()=>{
+    initRoutes();
+    renderStations();
+
+    routeSelect.addEventListener("change", ()=>{ currentRoute = routeSelect.value; renderStations(); });
+    dirSelect.addEventListener("change", renderStations);
+    stationFilter.addEventListener("input", renderStations);
+    routeSearch.addEventListener("input", ()=>initRoutes(routeSearch.value.trim().toLowerCase()));
+    clearSearch.addEventListener("click", ()=>{ routeSearch.value=''; initRoutes(); });
+    queryBtn.addEventListener("click", ()=>{ // query selected station if any
+      const first = stationGrid.querySelector("button[data-id]");
+      if(first) doQuery(first.dataset.id); else alert('請選擇或搜尋站點');
+    });
+    showFav.addEventListener("click", ()=>{ if(favorites.length===0){ alert('尚未收藏站'); } else doQuery(favorites[0]); });
+    resetFav.addEventListener("click", ()=>{ favorites=[]; saveFavs(); alert('已清除收藏'); });
+
+    // render routeSelect and highlight
+    routeSelect.value = currentRoute;
+  });
+</script>
+</body>
+</html

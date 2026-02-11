@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MTR 巴士到站時間查詢（非官方）</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; 
+      max-width: 860px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      background: #f8f9fa; 
+      color: #333; 
+      position: relative;
+    }
+    .back-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      padding: 8px 16px;
+      background: #c8102e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      z-index: 100;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: #a00d24; }
+    h1 { color: #c8102e; text-align: center; margin-bottom: 0.4em; margin-top: 60px; }
+    .subtitle { text-align: center; color: #555; margin-bottom: 1.8em; }
+    .controls { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 1.5em 0; }
+    select, button { padding: 10px 16px; font-size: 1.05rem; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #c8102e; color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:hover { background: #a00d24; }
+    button:disabled { background: #999; cursor: not-allowed; }
+    .status { text-align: center; margin: 1em 0; color: #555; min-height: 1.4em; }
+    .route-title { font-size: 1.6rem; margin: 1.2em 0 0.6em; color: #c8102e; text-align: center; }
+    .bus-stop { background: white; border-radius: 8px; margin: 1.2em 0; padding: 1em 1.2em; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .stop-name { font-size: 1.25rem; font-weight: 600; margin: 0.4em 0 0.8em; color: #222; }
+    .bus-item { display: grid; grid-template-columns: 1.8fr 2.8fr 1fr; gap: 8px; padding: 10px 0; border-bottom: 1px solid #eee; }
+    .bus-item:last-child { border-bottom: none; }
+    .bus-time { font-size: 1.35rem; font-weight: bold; color: #c8102e; }
+    .bus-info { color: #555; font-size: 0.95rem; }
+    .schedule { color: #2e7d32; font-size: 0.9rem; }
+    .realtime { color: #d81b60; font-size: 0.9rem; }
+    .footer-remark { margin-top: 2.5em; padding: 1em; background: #fff3cd; border-radius: 8px; font-size: 0.92rem; line-height: 1.45; color: #664d03; }
+    .error-msg { color: #c00; text-align: center; margin: 2em 0; font-size: 1.1rem; }
+    @media (max-width: 560px) { 
+      .bus-item { grid-template-columns: 1fr; gap: 4px; } 
+      .bus-time { margin-bottom: 4px; }
+      .back-btn { position: fixed; top: 10px; left: 10px; padding: 8px 14px; font-size: 0.95rem; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn">← 返回</a>
+
+<h1>MTR 巴士到站時間查詢</h1>
+<p class="subtitle">（非官方工具 • 公開資料 • 2026年1月強化中文站名版）</p>
+
+<div class="controls">
+  <select id="lang">
+    <option value="zh">繁體中文</option>
+    <option value="en">English</option>
+  </select>
+  <select id="route">
+    <option value="">請選擇路線…</option>
+    <option value="506">506 屯門碼頭 ↔ 兆麟 / 富健花園 ↔ 屯門站</option>
+    <option value="K12">K12 大埔墟站 ↔ 八號花園</option>
+    <option value="K14">K14 大埔超級城 ↔ 大埔墟站</option>
+    <option value="K17">K17 大埔墟站 ↔ 富善</option>
+    <option value="K18">K18 大埔墟站 ↔ 廣福</option>
+    <option value="K51">K51 富泰 ↔ 大欖 / 兆康站</option>
+    <option value="K52">K52 悅湖山莊 ↔ 龍鼓灘 (含K52A/K52P變體)</option>
+    <option value="K53">K53 屯門站 ↔ 掃管笏 (循環)</option>
+    <option value="K54">K54 和田邨 ↔ 屯門市中心 (循環)</option>
+    <option value="K65">K65 元朗站 ↔ 流浮山</option>
+    <option value="K66">K66 朗屏 ↔ 大棠</option>
+    <option value="K68">K68 元朗工業邨循環 / 各支線</option>
+  </select>
+  <button id="btnQuery" disabled>查詢</button>
+</div>
+
+<div class="status" id="status">請先選擇路線</div>
+<div id="result"></div>
+<div class="footer-remark" id="footerRemark" style="display:none"></div>
+
+<script>
+const API_URL = "https://rt.data.gov.hk/v1/transport/mtr/bus/getSchedule";
+
+// 2026年強化中文站名映射（基於MTR官網、Moovit、Busio等2026年路線序列 + 你提供的未知ID）
+const STOP_NAMES = {
+  "506": {
+    "506-D010": "屯門碼頭",
+    "506-D020": "兆麟苑",
+    "506-D030": "富健花園",
+    "506-D040": "屯門站",
+    "506-D050": "蝴蝶灣",
+    "506-nD010": "屯門碼頭",
+    "506-nD040": "屯門站",
+    "506-U010": "屯門站",
+    "506-U020": "富健花園"
+  },
+  "K12": {
+    "K12-D010": "大埔墟站",
+    "K12-D020": "寶雅路",
+    "K12-D030": "八號花園",
+    "K12-U010": "八號花園",
+    "K12-U020": "大埔墟站"
+  },
+  "K14": {
+    "K14-D010": "大埔超級城",
+    "K14-D020": "大埔墟站",
+    "K14-U010": "大埔墟站",
+    "K14-U020": "大埔超級城"
+  },
+  "K17": {
+    "K17-D010": "富善邨",
+    "K17-D020": "大埔墟站",
+    "K17-U010": "大埔墟站",
+    "K17-U020": "富善邨"
+  },
+  "K18": {
+    "K18-D010": "廣福邨",
+    "K18-D020": "大埔墟站",
+    "K18-U010": "大埔墟站",
+    "K18-U020": "廣福邨"
+  },
+  "K51": {
+    "K51-D010": "富泰邨",
+    "K51-D020": "嶺南大學",
+    "K51-D030": "兆康站",
+    "K51-D040": "屯門市中心",
+    "K51-D050": "三聖邨",
+    "K51-D060": "小欖",
+    "K51-D070": "大欖",
+    "K51-nD010": "富泰邨",
+    "K51-nD070": "大欖",
+    "K51-U010": "大欖",
+    "K51-U070": "富泰邨"
+  },
+  "K52": {
+    "K52-nD010": "悅湖山莊",
+    "K52-nD020": "兆麟苑",
+    "K52-nD030": "屯門站",
+    "K52-nD040": "屯門市中心",
+    "K52-nD050": "置樂花園",
+    "K52-nD055": "三聖邨",
+    "K52-nD060": "蝴蝶灣",
+    "K52-nD065": "湖景邨",
+    "K52-nD070": "望后石",
+    "K52-nD075": "屯門碼頭",
+    "K52-nD080": "踏石角",
+    "K52-nD085": "小冷水",
+    "K52-nD090": "龍鼓灘",
+    "K52-nD095": "環保園",
+    "K52-nD100": "蝴蝶站",
+    "K52-nD110": "輕鐵車廠",
+    "K52-nD120": "龍鼓灘",
+    "K52-nD140": "曾咀",
+    "K52-D010": "龍鼓灘",
+    "K52-U010": "屯門站",
+    "K52-U020": "悅湖山莊"
+  },
+  "K53": {
+    "K53-D010": "屯門站",
+    "K53-D020": "掃管笏",
+    "K53-D030": "青山灣",
+    "K53-D040": "富泰邨",
+    "K53-nD010": "屯門站",
+    "K53-nD020": "掃管笏"
+  },
+  "K54": {
+    // 順向（從和田邨出發 → 屯門市中心方向，常見 Uxxx）
+    "K54-U010": "和田邨",
+    "K54-U020": "菁田邨 / NOVO LAND",
+    "K54-U030": "紫田村",
+    "K54-U040": "欣田邨",
+    "K54-U050": "港鐵兆康站 (北) (輕鐵兆康站)",
+    "K54-U060": "紅橋",
+    "K54-U070": "屯門市中心",
+    "K54-U080": "屯門市廣場",
+    "K54-U090": "新墟街市 / 屯門新墟",
+    // 返程（屯門市中心 → 回和田邨，常見 Dxxx）
+    "K54-D010": "屯門市中心",
+    "K54-D020": "屯門市廣場",
+    "K54-D030": "新墟街市 / 屯門新墟",
+    "K54-D040": "港鐵兆康站 (北) (返程)",
+    "K54-D050": "港鐵兆康站 (北) (輕鐵兆康站)",
+    "K54-D060": "紅橋",
+    "K54-D070": "屯門市中心",
+    "K54-D080": "屯門市廣場",
+    "K54-D090": "新墟街市 / 屯門新墟",
+    "K54-D100": "兆康苑 / 青麟路",
+    "K54-D110": "欣寶路公共運輸交匯處",
+    "K54-D120": "菁田邨 (返程)",
+    "K54-D130": "和田邨 (終點)",
+    // 兼容變體
+    "K54-nD050": "港鐵兆康站 (北)",
+    "K54-nD070": "屯門市中心"
+  },
+  "K65": {
+    "K65-U010": "元朗站",
+    "K65-U020": "又新街",
+    "K65-D070": "流浮山",
+    "K65-D080": "新慶村",
+    "K65-D090": "羅屋村",
+    "K65-D100": "沙洲里",
+    "K65-D110": "屏山",
+    "K65-D120": "天水圍站",
+    "K65-D130": "坑尾村",
+    "K65-D140": "輕鐵屏山站",
+    "K65-D150": "輕鐵水邊圍站",
+    "K65-D160": "元朗廣場",
+    "K65-D170": "元朗站"
+  },
+  "K66": {
+    "K66-D010": "港鐵朗屏站 / 朗屏站",
+    "K66-D020": "朗屏邨",
+    "K66-D030": "大棠巴士總站",
+    "K66-D040": "大棠山道",
+    "K66-U005": "港鐵朗屏站"
+  },
+  "K68": {
+    "K68-C010": "元朗工業邨",
+    "K68-C020": "元朗公園",
+    "K68-C030": "元朗站",
+    "K68-C040": "十八鄉路",
+    "K68-C050": "南生圍",
+    "K68-D010": "銀田花園",
+    "K68-D020": "元朗廣場",
+    "K68-D030": "大橋村 / 泰豐園",
+    "K68-nD010": "元朗工業邨"
+  }
+};
+
+const langSelect = document.getElementById("lang");
+const routeSelect = document.getElementById("route");
+const btnQuery = document.getElementById("btnQuery");
+const statusDiv = document.getElementById("status");
+const resultDiv = document.getElementById("result");
+const footerRemark = document.getElementById("footerRemark");
+let isQuerying = false;
+
+function updateButtonState() {
+  btnQuery.disabled = !routeSelect.value || isQuerying;
+}
+
+langSelect.addEventListener("change", updateButtonState);
+routeSelect.addEventListener("change", updateButtonState);
+
+btnQuery.addEventListener("click", async () => {
+  const lang = langSelect.value;
+  const route = routeSelect.value.trim();
+  if (!route) return;
+
+  isQuerying = true;
+  updateButtonState();
+  statusDiv.textContent = "正在查詢...";
+  resultDiv.innerHTML = "";
+  footerRemark.style.display = "none";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: lang, routeName: route })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    if (data.status !== "0" && data.status !== "1") throw new Error("API 狀態異常");
+
+    renderResult(data, lang, route);
+    statusDiv.textContent = `最後更新：${data.routeStatusTime || "—"}`;
+
+    if (data.footerRemarks) {
+      footerRemark.textContent = data.footerRemarks;
+      footerRemark.style.display = "block";
+    }
+  } catch (err) {
+    console.error(err);
+    resultDiv.innerHTML = `<div class="error-msg">查詢失敗<br>${err.message}</div>`;
+  } finally {
+    isQuerying = false;
+    updateButtonState();
+  }
+});
+
+function getStopName(busStopId, selectedRoute) {
+  const routeDict = STOP_NAMES[selectedRoute] || {};
+  if (routeDict[busStopId]) return routeDict[busStopId];
+  console.warn(`未知站點 ID: ${busStopId} (路線 ${selectedRoute})`);
+  return `未知站點 (${busStopId})`;
+}
+
+function renderResult(data, lang, selectedRoute) {
+  if (!data.busStop?.length) {
+    resultDiv.innerHTML = '<p style="text-align:center">暫無站點資料</p>';
+    return;
+  }
+
+  const isZh = lang === "zh";
+  const title = isZh ? `路線 ${data.routeName} 到站時間` : `Route ${data.routeName} ETA`;
+
+  let html = `<h2 class="route-title">${title}</h2>`;
+
+  for (const stop of data.busStop) {
+    const stopId = stop.busStopId || "—";
+    const displayName = getStopName(stopId, selectedRoute);
+
+    html += `<div class="bus-stop">
+      <div class="stop-name">${displayName} <small>(${stopId})</small></div>`;
+
+    if (!stop.bus?.length) {
+      html += "<p>暫無巴士資料</p></div>";
+      continue;
+    }
+
+    for (const bus of stop.bus) {
+      const arrSec = Number(bus.arrivalTimeInSecond) || 999999;
+      let timeDisplay = bus.arrivalTimeText || "—";
+
+      if (arrSec >= 108000 || arrSec < 0) {
+        timeDisplay = isZh ? "待定 / 沒有預計時間" : "TBC / No ETA";
+      }
+
+      const isSchedule = bus.isScheduled === "1";
+      const timeClass = isSchedule ? "schedule" : "realtime";
+      const directionHint = bus.lineRef?.includes("CIR") ? "(循環)" : "";
+
+      html += `
+        <div class="bus-item">
+          <div class="bus-time">${timeDisplay}</div>
+          <div class="bus-info">車牌：${bus.busId || "—"}　　${bus.lineRef || ""} ${directionHint}</div>
+          <div class="${timeClass}">
+            ${isSchedule ? (isZh ? "(班次)" : "(sched)") : (isZh ? "(實時)" : "(live)")}
+          </div>
+        </div>`;
+    }
+    html += "</div>";
+  }
+
+  resultDiv.innerHTML = html;
+}
+
+updateButtonState();
+</script>
+</body>
+</html>
