@@ -12,7 +12,7 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       background: #f8f9fa;
       color: #333;
-      scroll-snap-type: y proximity; /* 改為 proximity，避免內容展開時強制跳頁 */
+      scroll-snap-type: y proximity;
       overflow-y: scroll;
     }
     .section {
@@ -391,6 +391,20 @@ const STATION_COORDS = {
 
 const AUTO_REFRESH_MS = 20000;
 
+/* 新增：每條路線的平均站間乘車時間（分鐘，根據實際運營經驗估算） */
+const AVG_INTERVAL_TIME = {
+  "AEL": 8,    // 機場快線距離長、速度快
+  "TCL": 5,    // 東涌線部分長距離
+  "DRL": 3,    // 迪士尼短
+  "SIL": 4,    // 南港島線
+  "TML": 2.8,  // 屯馬線較密
+  "TKL": 3,
+  "EAL": 3,
+  "TWL": 2.5,
+  "ISL": 2.5,
+  "KTL": 2.5
+};
+
 // 構建路線圖（用於路線規劃）
 const graph = {};
 Object.entries(LINES).forEach(([code, info]) => {
@@ -469,7 +483,7 @@ function queryFromMap(line, sta) {
   populateStations();
   staSelect.value = sta;
   updateButtonState();
-  performQuery(true); // true = 需要跳到第二頁
+  performQuery(true);
   if (map) map.closePopup();
 }
 
@@ -503,7 +517,6 @@ function populateStations() {
   updateButtonState();
 }
 
-// 路線規劃專用：填充路線選單
 function populateLineSelect(selectElement) {
   selectElement.innerHTML = '<option value="">請選擇路線…</option>';
   Object.keys(LINES).forEach(code => {
@@ -514,7 +527,6 @@ function populateLineSelect(selectElement) {
   });
 }
 
-// 路線規劃專用：根據路線填充車站
 function populateStaSelect(lineSelectId, staSelectId) {
   const lineSelect = document.getElementById(lineSelectId);
   const staSelect = document.getElementById(staSelectId);
@@ -544,7 +556,6 @@ function updatePlanButton() {
   planStatus.textContent = valid ? "" : "請完整選擇出發及終點路線與車站";
 }
 
-// 修改：加入 shouldScroll 參數，只在手動查詢時跳到第二頁
 async function performQuery(shouldScroll = false) {
   const line = lineSelect.value;
   const sta = staSelect.value;
@@ -596,7 +607,7 @@ async function performQuery(shouldScroll = false) {
     }
 
     if (autoTimer) clearInterval(autoTimer);
-    autoTimer = setInterval(() => performQuery(false), AUTO_REFRESH_MS); // 自動刷新時不跳頁
+    autoTimer = setInterval(() => performQuery(false), AUTO_REFRESH_MS);
 
   } catch (err) {
     console.error(err);
@@ -708,7 +719,6 @@ function toggleMore(btn) {
   const hiddenDiv = btn.parentNode.previousElementSibling;
   if (!hiddenDiv || !hiddenDiv.classList.contains('hidden-trains')) return;
 
-  // 記錄展開前的位置，避免跳頁
   const prevScrollY = window.scrollY;
 
   if (hiddenDiv.style.maxHeight === '0px' || !hiddenDiv.style.maxHeight) {
@@ -722,7 +732,6 @@ function toggleMore(btn) {
     btn.textContent = '▼ 顯示更多';
   }
 
-  // 等待動畫完成後恢復原 scroll 位置（防止 snap 跳頁）
   setTimeout(() => {
     window.scrollTo(0, prevScrollY);
   }, 450);
@@ -780,6 +789,27 @@ function performPlan() {
   }
 
   const transfers = segments.length - 1;
+
+  /* 計算預計乘車時間 */
+  let rideTime = 0;
+  segments.forEach(seg => {
+    const intervalsInSeg = seg.stations.length - 1;
+    const avg = AVG_INTERVAL_TIME[seg.line] || 3; // 默認 3 分鐘
+    rideTime += intervalsInSeg * avg;
+  });
+  const transferPenalty = transfers * 5; // 每轉乘加 5 分鐘（走路 + 等車）
+  let estimatedMinutes = Math.round(rideTime + transferPenalty);
+  if (estimatedMinutes < 1) estimatedMinutes = 1; // 最小 1 分鐘
+
+  /* 顯示預計時間（突出） */
+  html += `<p style="text-align:center; font-size:1.3rem; margin:1.5em 0 1em; color:#c8102e; font-weight:bold;">
+    預計需時約 ${estimatedMinutes} 分鐘
+  </p>`;
+  html += `<p style="text-align:center; font-size:0.9rem; color:#888; margin-top:-0.8em; margin-bottom:1.5em;">
+    （估計值，含轉乘時間，實際視乎班次及高峰期而定）
+  </p>`;
+
+  /* 原有站數與轉乘資訊 */
   html += `<p style="text-align:center; font-size:1.1rem; margin:1em 0; color:#c8102e;">
     共 ${totalStops} 站${transfers > 0 ? `，需轉乘 ${transfers} 次` : "，無需轉乘"}
   </p>`;
@@ -851,8 +881,8 @@ function initMap() {
 // 事件綁定與初始化
 lineSelect.addEventListener("change", populateStations);
 staSelect.addEventListener("change", updateButtonState);
-btnQuery.addEventListener("click", () => performQuery(true)); // 手動查詢，需要跳頁
-btnRefresh.addEventListener("click", () => performQuery(true)); // 重新整理也在第二頁，可跳頁（無影響）
+btnQuery.addEventListener("click", () => performQuery(true));
+btnRefresh.addEventListener("click", () => performQuery(true));
 
 fromLine.addEventListener("change", () => { populateStaSelect("fromLine", "fromSta"); updatePlanButton(); });
 toLine.addEventListener("change", () => { populateStaSelect("toLine", "toSta"); updatePlanButton(); });
