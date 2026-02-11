@@ -750,7 +750,7 @@ function performPlan() {
 
   const path = findPath(start, end);
   if (!path) {
-    planResult.innerHTML = `<div class="error-msg">無法找到路線（理論上不會發生）</div>`;
+    planResult.innerHTML = `<div class="error-msg">無法找到路線</div>`;
     return;
   }
 
@@ -901,3 +901,4 @@ window.scrollTo(0, 0);
 </body>
 
 </html>
+
