@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>輕鐵實時到站時間</title>
+    <!-- Leaflet CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;display=swap');
         
@@ -60,6 +63,25 @@
             padding: 4px 10px;
             border-radius: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        /* Tab 切換 */
+        .tabs {
+            display: flex;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: var(--mtr-yellow);
+            color: #222;
         }
         
         .station-selector {
@@ -273,19 +295,6 @@
             font-size: 0.9em;
         }
         
-        .form-row {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .form-row select {
-            flex: 1;
-            padding: 10px 14px;
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            font-size: 0.95em;
-        }
-        
         .calc-btn {
             width: 100%;
             background: var(--mtr-yellow);
@@ -310,6 +319,52 @@
             line-height: 1.5;
         }
         
+        /* ===== 地圖模式專用樣式 ===== */
+        #tab2 { display: none; }
+        #mapContainer { 
+            display: flex; 
+            flex-direction: column; 
+            height: 620px; 
+        }
+        .map-wrapper { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+            border-top: 1px solid #eee;
+        }
+        .sidebar { 
+            width: 280px; 
+            background: #fff; 
+            border-right: 1px solid #ddd; 
+            overflow-y: auto; 
+            padding: 15px; 
+        }
+        #map { 
+            flex: 1; 
+        }
+        .station-item {
+            padding: 12px 15px;
+            margin: 6px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .station-item:hover { 
+            background: #e3f2fd; 
+            transform: translateX(4px); 
+        }
+        .search-box { 
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+        }
+        
         .footer-note {
             text-align: center;
             font-size: 0.68em;
@@ -329,53 +384,75 @@
         <div id="liveClock" class="live-clock">00:00</div>
     </div>
     
-    <!-- Station Selector -->
-    <div class="station-selector">
-        <label for="stationSelect">車站</label>
-        <select id="stationSelect" onchange="changeStation()">
-            <!-- Populated by JS -->
-        </select>
-        <button class="refresh-btn" onclick="updateSchedule()">
-            🔄 更新
-        </button>
+    <!-- Tab 切換 -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(0)">實時到站</div>
+        <div class="tab" onclick="switchTab(1)">🚏 轉乘規劃器</div>
+        <div class="tab" onclick="switchTab(2)">🗺️ 地圖模式</div>
     </div>
     
-    <!-- Display Board -->
-    <div id="displayBoard" class="display-board">
-        <div class="loading">載入中...</div>
+    <!-- Tab 0: 實時到站 + 轉乘規劃器 -->
+    <div id="tab0">
+        <div class="station-selector">
+            <label for="stationSelect">車站</label>
+            <select id="stationSelect" onchange="changeStation()">
+                <!-- Populated by JS -->
+            </select>
+            <button class="refresh-btn" onclick="updateSchedule()">
+                🔄 更新
+            </button>
+        </div>
+        
+        <div id="displayBoard" class="display-board">
+            <div class="loading">載入中...</div>
+        </div>
+        
+        <div class="planner-panel">
+            <h3>🚏 轉乘規劃器（所有線路 + 所有站）</h3>
+            
+            <div class="form-group">
+                <label>起點路線</label>
+                <select id="startRoute" onchange="updateStartStations()"></select>
+            </div>
+            
+            <div class="form-group">
+                <label>起點站</label>
+                <select id="startStation"></select>
+            </div>
+            
+            <div class="form-group">
+                <label>終點路線</label>
+                <select id="endRoute" onchange="updateEndStations()"></select>
+            </div>
+            
+            <div class="form-group">
+                <label>終點站</label>
+                <select id="endStation"></select>
+            </div>
+            
+            <button class="calc-btn" onclick="calculateTransfer()">計算轉乘路徑</button>
+            
+            <div id="transferResult" class="result" style="display:none;"></div>
+        </div>
+        
+        <div class="info" id="systemTime">最後更新: --</div>
     </div>
     
-    <!-- 轉乘規劃器 -->
-    <div class="planner-panel">
-        <h3>🚏 轉乘規劃器（所有線路 + 所有站）</h3>
-        
-        <div class="form-group">
-            <label>起點路線</label>
-            <select id="startRoute" onchange="updateStartStations()"></select>
+    <!-- Tab 2: 地圖模式（68站全版） -->
+    <div id="tab2">
+        <div id="mapContainer">
+            <div class="map-wrapper">
+                <!-- 左側車站列表 -->
+                <div class="sidebar">
+                    <h3 style="margin-bottom:10px;color:#003087;">🚉 輕鐵車站列表（68站）</h3>
+                    <input type="text" id="searchInput" class="search-box" placeholder="🔍 搜尋車站名稱...">
+                    <div id="stationList"></div>
+                </div>
+                <!-- 地圖 -->
+                <div id="map"></div>
+            </div>
         </div>
-        
-        <div class="form-group">
-            <label>起點站</label>
-            <select id="startStation"></select>
-        </div>
-        
-        <div class="form-group">
-            <label>終點路線</label>
-            <select id="endRoute" onchange="updateEndStations()"></select>
-        </div>
-        
-        <div class="form-group">
-            <label>終點站</label>
-            <select id="endStation"></select>
-        </div>
-        
-        <button class="calc-btn" onclick="calculateTransfer()">計算轉乘路徑</button>
-        
-        <div id="transferResult" class="result" style="display:none;"></div>
     </div>
-    
-    <!-- Info -->
-    <div class="info" id="systemTime">最後更新: --</div>
 </div>
 
 <div class="footer-note">
@@ -399,7 +476,6 @@ const ROUTE_COLORS = {
     '8': '#9C4F9F'
 };
 
-// 【已擴展】所有主要輕鐵線路（包含所有常見線路）
 const AVAILABLE_ROUTES = [
     { id: '505', name: '505 三聖 - 兆康' },
     { id: '507', name: '507 屯門碼頭 - 田景' },
@@ -414,7 +490,7 @@ const AVAILABLE_ROUTES = [
     { id: '761P', name: '761P 天逸 - 元朗' }
 ];
 
-const STATIONS = [
+const STATIONS = [ /* 原有精選站點，用於下拉選單 */
     { id: '001', name: '屯門碼頭' }, { id: '010', name: '美樂' }, { id: '015', name: '蝴蝶' },
     { id: '030', name: '龍門' }, { id: '040', name: '青山村' }, { id: '050', name: '青雲' },
     { id: '060', name: '建安' }, { id: '070', name: '河田' }, { id: '075', name: '蔡意橋' },
@@ -431,33 +507,120 @@ const STATIONS = [
     { id: '500', name: '天榮' }, { id: '600', name: '元朗' }, { id: '920', name: '三聖' }
 ];
 
+// ====================== 完整 68 站地圖資料（用戶提供） ======================
+const FULL_STATIONS = [
+    { id: "001", name: "屯門碼頭", lat: 22.3715, lng: 113.9650 },
+    { id: "010", name: "美樂", lat: 22.3730, lng: 113.9640 },
+    { id: "015", name: "蝴蝶", lat: 22.3750, lng: 113.9605 },
+    { id: "020", name: "輕鐵車廠", lat: 22.3770, lng: 113.9590 },
+    { id: "030", name: "龍門", lat: 22.3795, lng: 113.9580 },
+    { id: "040", name: "青山村", lat: 22.3850, lng: 113.9705 },
+    { id: "050", name: "青雲", lat: 22.3875, lng: 113.9725 },
+    { id: "060", name: "建安", lat: 22.3890, lng: 113.9740 },
+    { id: "070", name: "河田", lat: 22.3915, lng: 113.9730 },
+    { id: "075", name: "蔡意橋", lat: 22.3935, lng: 113.9715 },
+    { id: "080", name: "澤豐", lat: 22.3960, lng: 113.9700 },
+    { id: "090", name: "屯門醫院", lat: 22.3990, lng: 113.9680 },
+    { id: "100", name: "兆康", lat: 22.4180, lng: 113.9780 },
+    { id: "110", name: "麒麟", lat: 22.4155, lng: 113.9755 },
+    { id: "120", name: "青松", lat: 22.4125, lng: 113.9730 },
+    { id: "130", name: "建生", lat: 22.4105, lng: 113.9705 },
+    { id: "140", name: "田景", lat: 22.4060, lng: 113.9650 },
+    { id: "150", name: "良景", lat: 22.4020, lng: 113.9620 },
+    { id: "160", name: "新圍", lat: 22.3980, lng: 113.9600 },
+    { id: "170", name: "山景（北）", lat: 22.3955, lng: 113.9585 },
+    { id: "180", name: "山景（南）", lat: 22.3930, lng: 113.9560 },
+    { id: "190", name: "鳴琴", lat: 22.3905, lng: 113.9540 },
+    { id: "200", name: "石排", lat: 22.3880, lng: 113.9525 },
+    { id: "212", name: "大興（北）", lat: 22.3860, lng: 113.9505 },
+    { id: "220", name: "大興（南）", lat: 22.3840, lng: 113.9490 },
+    { id: "230", name: "銀圍", lat: 22.3820, lng: 113.9475 },
+    { id: "240", name: "兆禧", lat: 22.3750, lng: 113.9700 },
+    { id: "250", name: "屯門泳池", lat: 22.3780, lng: 113.9720 },
+    { id: "260", name: "豐景園", lat: 22.3805, lng: 113.9735 },
+    { id: "265", name: "兆麟", lat: 22.3820, lng: 113.9750 },
+    { id: "270", name: "安定", lat: 22.3905, lng: 113.9750 },
+    { id: "275", name: "友愛", lat: 22.3885, lng: 113.9765 },
+    { id: "280", name: "市中心", lat: 22.3900, lng: 113.9770 },
+    { id: "295", name: "屯門", lat: 22.3930, lng: 113.9760 },
+    { id: "300", name: "杯渡", lat: 22.3955, lng: 113.9785 },
+    { id: "310", name: "何福堂", lat: 22.3980, lng: 113.9800 },
+    { id: "320", name: "新墟", lat: 22.4010, lng: 113.9820 },
+    { id: "330", name: "景峰", lat: 22.4040, lng: 113.9835 },
+    { id: "340", name: "鳳地", lat: 22.4065, lng: 113.9850 },
+    { id: "430", name: "天水圍", lat: 22.4485, lng: 114.0020 },
+    { id: "450", name: "天湖", lat: 22.4520, lng: 114.0005 },
+    { id: "460", name: "天瑞", lat: 22.4545, lng: 114.0030 },
+    { id: "468", name: "頌富", lat: 22.4555, lng: 114.0000 },
+    { id: "470", name: "天悅", lat: 22.4570, lng: 113.9985 },
+    { id: "480", name: "翠湖", lat: 22.4590, lng: 113.9970 },
+    { id: "490", name: "天富", lat: 22.4615, lng: 113.9955 },
+    { id: "500", name: "天恒", lat: 22.4640, lng: 113.9940 },
+    { id: "510", name: "天逸", lat: 22.4665, lng: 113.9925 },
+    { id: "520", name: "天秀", lat: 22.4690, lng: 113.9910 },
+    { id: "530", name: "天悅", lat: 22.4555, lng: 114.0050 },
+    { id: "560", name: "水邊圍", lat: 22.4400, lng: 114.0150 },
+    { id: "570", name: "坑尾村", lat: 22.4425, lng: 114.0175 },
+    { id: "580", name: "塘坊村", lat: 22.4450, lng: 114.0200 },
+    { id: "590", name: "洪天路", lat: 22.4475, lng: 114.0225 },
+    { id: "600", name: "元朗", lat: 22.4440, lng: 114.0250 },
+    { id: "610", name: "豐年路", lat: 22.4420, lng: 114.0280 },
+    { id: "620", name: "康樂路", lat: 22.4400, lng: 114.0305 },
+    { id: "630", name: "大棠路", lat: 22.4380, lng: 114.0330 },
+    { id: "640", name: "元朗站", lat: 22.4445, lng: 114.0350 },
+    { id: "650", name: "朗屏", lat: 22.4480, lng: 114.0375 },
+    { id: "660", name: "屏山", lat: 22.4515, lng: 114.0400 },
+    { id: "670", name: "洪水橋", lat: 22.4350, lng: 114.0150 },
+    { id: "680", name: "鍾屋村", lat: 22.4325, lng: 114.0125 },
+    { id: "690", name: "泥圍", lat: 22.4300, lng: 114.0100 },
+    { id: "700", name: "藍地", lat: 22.4275, lng: 114.0075 },
+    { id: "710", name: "田景", lat: 22.4060, lng: 113.9650 },
+    { id: "920", name: "三聖", lat: 22.3755, lng: 113.9585 },
+    { id: "930", name: "屯門碼頭", lat: 22.3715, lng: 113.9650 }
+];
+
 let currentStationId = '001';
 let autoUpdateInterval = null;
 let controller = null;
+let map = null;
+let markers = {};
 
 // ====================== 即時時鐘 ======================
 function updateLiveClock() {
     const clockEl = document.getElementById('liveClock');
     if (!clockEl) return;
     const now = new Date();
-    const timeStr = now.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const timeStr = now.toLocaleTimeString('zh-HK', { 
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+    });
     clockEl.textContent = timeStr;
+}
+
+// ====================== Tab 切換 ======================
+function switchTab(n) {
+    document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === n));
+    
+    document.getElementById('tab0').style.display = n === 0 ? 'block' : 'none';
+    document.getElementById('tab2').style.display = n === 2 ? 'block' : 'none';
+    
+    if (n === 2 && !map) {
+        setTimeout(() => {
+            initMap();
+            createStationList();
+        }, 100);
+    }
 }
 
 // ====================== 轉乘規劃器 ======================
 function populateRouteSelects() {
     const startRouteSelect = document.getElementById('startRoute');
     const endRouteSelect = document.getElementById('endRoute');
-    
     startRouteSelect.innerHTML = '<option value="">請選擇路線</option>';
     endRouteSelect.innerHTML = '<option value="">請選擇路線</option>';
-    
     AVAILABLE_ROUTES.forEach(route => {
         const option1 = document.createElement('option');
-        option1.value = route.id;
-        option1.textContent = route.name;
+        option1.value = route.id; option1.textContent = route.name;
         startRouteSelect.appendChild(option1);
-        
         const option2 = option1.cloneNode(true);
         endRouteSelect.appendChild(option2);
     });
@@ -468,8 +631,7 @@ function updateStartStations() {
     select.innerHTML = '<option value="">請選擇起點站</option>';
     STATIONS.forEach(station => {
         const opt = document.createElement('option');
-        opt.value = station.id;
-        opt.textContent = `${station.id} - ${station.name}`;
+        opt.value = station.id; opt.textContent = `${station.id} - ${station.name}`;
         select.appendChild(opt);
     });
 }
@@ -479,8 +641,7 @@ function updateEndStations() {
     select.innerHTML = '<option value="">請選擇終點站</option>';
     STATIONS.forEach(station => {
         const opt = document.createElement('option');
-        opt.value = station.id;
-        opt.textContent = `${station.id} - ${station.name}`;
+        opt.value = station.id; opt.textContent = `${station.id} - ${station.name}`;
         select.appendChild(opt);
     });
 }
@@ -490,36 +651,27 @@ function calculateTransfer() {
     const startStationId = document.getElementById('startStation').value;
     const endRoute = document.getElementById('endRoute').value;
     const endStationId = document.getElementById('endStation').value;
-    
     const resultDiv = document.getElementById('transferResult');
-    
     if (!startRoute || !startStationId || !endRoute || !endStationId) {
         resultDiv.innerHTML = `<span style="color:#c62828;">⚠️ 請完整選擇起點與終點</span>`;
         resultDiv.style.display = 'block';
         return;
     }
-    
     const startStation = STATIONS.find(s => s.id === startStationId);
     const endStation = STATIONS.find(s => s.id === endStationId);
-    
     let html = `<strong>🚋 轉乘建議</strong><br>`;
-    
     if (startStationId === endStationId) {
         html += `✅ 已到達目的地！`;
     } else if (startRoute === endRoute) {
         html += `✅ 直接搭乘 <span style="background:${ROUTE_COLORS[startRoute]||'#222'}; color:white; padding:2px 6px; border-radius:4px;">${startRoute}</span> 路線<br>從 <strong>${startStation.name}</strong> 到 <strong>${endStation.name}</strong>`;
     } else {
-        html += `🔄 建議轉乘路徑：<br>`;
-        html += `1. 搭乘 <span style="background:${ROUTE_COLORS[startRoute]||'#222'}; color:white; padding:2px 6px; border-radius:4px;">${startRoute}</span> 到 <strong>${startStation.name}</strong><br>`;
-        html += `2. 在 <strong>${startStation.name}</strong> 轉乘 <span style="background:${ROUTE_COLORS[endRoute]||'#222'}; color:white; padding:2px 6px; border-radius:4px;">${endRoute}</span><br>`;
-        html += `3. 到達 <strong>${endStation.name}</strong>`;
+        html += `🔄 建議轉乘路徑：<br>1. 搭乘 <span style="background:${ROUTE_COLORS[startRoute]||'#222'}; color:white; padding:2px 6px; border-radius:4px;">${startRoute}</span> 到 <strong>${startStation.name}</strong><br>2. 在 <strong>${startStation.name}</strong> 轉乘 <span style="background:${ROUTE_COLORS[endRoute]||'#222'}; color:white; padding:2px 6px; border-radius:4px;">${endRoute}</span><br>3. 到達 <strong>${endStation.name}</strong>`;
     }
-    
     resultDiv.innerHTML = html;
     resultDiv.style.display = 'block';
 }
 
-// ====================== 原有功能（完全保留） ======================
+// ====================== 實時到站功能（原有） ======================
 function populateStationSelect() {
     const select = document.getElementById('stationSelect');
     select.innerHTML = '';
@@ -544,14 +696,13 @@ async function updateSchedule() {
     const board = document.getElementById('displayBoard');
     const refreshBtn = document.querySelector('.refresh-btn');
     const originalBtnHTML = refreshBtn.innerHTML;
-    
     refreshBtn.disabled = true;
     refreshBtn.innerHTML = '⏳ 更新中...';
     if (controller) controller.abort();
     controller = new AbortController();
-    
     try {
-        const response = await fetch(`${API_BASE}?station_id=${currentStationId}`, { signal: controller.signal });
+        const stationIdNum = parseInt(currentStationId, 10);
+        const response = await fetch(`${API_BASE}?station_id=${stationIdNum}`, { signal: controller.signal });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         if (data.status === 1) {
@@ -561,6 +712,7 @@ async function updateSchedule() {
         }
     } catch (error) {
         if (error.name === 'AbortError') return;
+        console.error('更新失敗：', error);
         board.innerHTML = `<div class="error">⚠️ 無法取得實時資料<br><small>請檢查網絡或稍後再試</small></div>`;
     } finally {
         refreshBtn.disabled = false;
@@ -571,36 +723,27 @@ async function updateSchedule() {
 function renderData(data) {
     const board = document.getElementById('displayBoard');
     board.innerHTML = '';
-    
     document.getElementById('systemTime').innerHTML = `
         <span>最後更新: ${data.system_time}</span>
         <span class="status-bar">● 自動更新已啟用</span>
     `;
-    
     const currentStation = STATIONS.find(s => s.id === currentStationId);
     const headerH1 = document.querySelector('.header h1');
     if (headerH1 && currentStation) {
-        headerH1.innerHTML = `🚋 ${currentStation.name} 實時到站時間`;
+        headerH1.innerHTML = `🚋 ${currentStation.name} <span style="font-size:0.65em; opacity:0.75;">實時到站時間</span>`;
     }
-
     let hasTrains = false;
     data.platform_list.forEach(platform => {
         if (!platform.route_list || platform.route_list.length === 0) return;
         hasTrains = true;
-        
-        let platformHtml = `<div class="platform-box">
-            <div class="platform-title">${platform.platform_id} 號月台</div>`;
-        
+        let platformHtml = `<div class="platform-box"><div class="platform-title">${platform.platform_id} 號月台</div>`;
         platform.route_list.forEach(train => {
             let timeDisplay = train.time_ch === "-" ? "即將抵達" : train.time_ch;
             let timeClass = train.time_ch === "-" ? "time arriving" : "time";
-            
             let carInfo = "";
             if (train.train_length === 2) carInfo = " <span style='font-size:0.78em;color:#666;'>(雙卡)</span>";
             else if (train.train_length === 1) carInfo = " <span style='font-size:0.78em;color:#666;'>(單卡)</span>";
-            
             const routeColor = ROUTE_COLORS[train.route_no] || '#222';
-            
             platformHtml += `
                 <div class="train-row">
                     <span class="route-no" style="background: ${routeColor};">${train.route_no}</span>
@@ -611,10 +754,87 @@ function renderData(data) {
         platformHtml += `</div>`;
         board.innerHTML += platformHtml;
     });
-
     if (!hasTrains) {
         board.innerHTML = '<div class="no-trains">目前沒有即將到站的列車</div>';
     }
+}
+
+// ====================== 地圖模式 ======================
+function initMap() {
+    map = L.map('map').setView([22.41, 113.98], 13);
+    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/basemap/wgs84/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '© 香港地政總署'
+    }).addTo(map);
+    L.tileLayer('https://mapapi.geodata.gov.hk/gs/api/v1.0.0/xyz/label/wgs84/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    FULL_STATIONS.forEach(station => {
+        const marker = L.marker([station.lat, station.lng], { riseOnHover: true }).addTo(map);
+        marker.bindPopup(`<b>${station.name}</b><br><small>載入實時班次...</small>`);
+        marker.on('click', () => loadMapSchedule(station, marker));
+        markers[station.id] = marker;
+    });
+}
+
+async function loadMapSchedule(station, marker) {
+    const popup = marker.getPopup();
+    popup.setContent(`<b>${station.name}</b><br><small style="color:#666;">正在載入實時班次...</small>`).update();
+    try {
+        const stationIdNum = parseInt(station.id, 10);
+        const res = await fetch(`${API_BASE}?station_id=${stationIdNum}`);
+        const data = await res.json();
+        let html = `<b style="font-size:1.1em;">🚉 ${station.name}</b><hr style="margin:8px 0;">`;
+        if (data.platform_list && data.platform_list.length > 0) {
+            data.platform_list.forEach(p => {
+                html += `<div style="font-weight:700; margin:10px 0 5px; color:#003087;">月台 ${p.platform_id}</div>`;
+                p.route_list.forEach(r => {
+                    const routeColor = ROUTE_COLORS[r.route_no] || '#222';
+                    const timeDisplay = r.time_ch === "-" ? `<span style="color:#c62828;">即將抵達</span>` : r.time_ch;
+                    html += `
+                        <div class="train-row" style="margin:4px 0; padding:8px; background:#f9f9f9; border-radius:8px;">
+                            <span class="route-no" style="background:${routeColor}; font-size:0.9em;">${r.route_no}</span>
+                            <span style="flex:1; margin-left:12px; font-weight:600;">往 ${r.dest_ch}</span>
+                            <span style="font-weight:800; color:#c62828;">${timeDisplay}</span>
+                        </div>`;
+                });
+            });
+        } else {
+            html += `<div style="color:#d32f2f; padding:12px 0;">暫無班次資料</div>`;
+        }
+        popup.setContent(html);
+    } catch (e) {
+        console.error(e);
+        popup.setContent(`<b>${station.name}</b><br><span style="color:#d32f2f;">❌ 載入失敗，請稍後重試</span>`);
+    }
+}
+
+function createStationList() {
+    const container = document.getElementById('stationList');
+    const search = document.getElementById('searchInput');
+    function render(filtered) {
+        container.innerHTML = '';
+        filtered.forEach(s => {
+            const div = document.createElement('div');
+            div.className = 'station-item';
+            div.innerHTML = `🚉 <strong>${s.name}</strong> <small style="color:#666;">(${s.id})</small>`;
+            div.onclick = () => {
+                map.flyTo([s.lat, s.lng], 16, { duration: 1.2 });
+                const marker = markers[s.id];
+                if (marker) {
+                    map.openPopup(marker.getPopup());
+                    loadMapSchedule(s, marker);
+                }
+            };
+            container.appendChild(div);
+        });
+    }
+    render(FULL_STATIONS);
+    search.addEventListener('input', () => {
+        const term = search.value.toLowerCase().trim();
+        const filtered = FULL_STATIONS.filter(s => s.name.toLowerCase().includes(term));
+        render(filtered);
+    });
 }
 
 // ====================== 初始化 ======================
@@ -622,24 +842,17 @@ function init() {
     currentStationId = localStorage.getItem('lastStation') || '001';
     populateStationSelect();
     updateSchedule();
-    
     if (autoUpdateInterval) clearInterval(autoUpdateInterval);
     autoUpdateInterval = setInterval(updateSchedule, AUTO_REFRESH_INTERVAL);
-    
-    // 即時時鐘
     updateLiveClock();
-    setInterval(updateLiveClock, 30000);
-    
-    // 轉乘規劃器初始化
+    setInterval(updateLiveClock, 1000);
     populateRouteSelects();
     updateStartStations();
     updateEndStations();
-    
-    console.log('%c[輕鐵實時] 專業版 + 完整線路/車站選項 已載入', 'color:#4caf50; font-weight:bold');
+    console.log('%c✅ 輕鐵實時 + 68站地圖 完整版 已載入', 'color:#4caf50; font-weight:bold; font-size:13px');
 }
 
 init();
 </script>
-
 </body>
 </html>
