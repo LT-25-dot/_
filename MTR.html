@@ -327,6 +327,73 @@
       border-radius: 8px;
       border: 1px solid #bae6fd;
     }
+        /* 票價切換器容器 */
+    .fare-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    }
+
+    .fare-toggle-container {
+    display: flex;
+    background: #f1f5f9;
+    padding: 6px;
+    border-radius: 50px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    gap: 4px;
+    }
+
+    /* 個別選項分頁 */
+    .fare-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: 40px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    background: transparent;
+    outline: none;
+    }
+
+    .fare-tab img {
+    height: 24px;
+    width: auto;
+    filter: grayscale(100%);
+    opacity: 0.6;
+    transition: all 0.3s;
+    }
+
+    .fare-tab span {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #64748b;
+    transition: all 0.3s;
+    }
+
+    /* 八達通選中狀態 */
+    .fare-tab.active.oct {
+    background: #f59e0b; /* 八達通橘 */
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .fare-tab.active.oct span { color: white; }
+    .fare-tab.active.oct img { filter: none; opacity: 1; }
+
+    /* 單程票選中狀態 */
+    .fare-tab.active.tkt {
+    background: #a6125d; /* 單程票紫紅 */
+    box-shadow: 0 4px 12px rgba(166, 18, 93, 0.3);
+    }
+    .fare-tab.active.tkt span { color: white; }
+    .fare-tab.active.tkt img { filter: none; opacity: 1; }
+
+    /* 票價表格微調 */
+    .fare-grid {
+    border: none;
+    background: #ffffff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
     .fare-header {
       font-size: 0.9rem;
       color: #6b7280;
@@ -1113,32 +1180,38 @@ async function performPlan() {
   html += `<p style="text-align:center; font-size:1.4rem; margin:1em 0 0.5em; color:var(--theme-color); font-weight:800;">預計車程約 ${estimatedMinutes} 分鐘</p>`;
   
   html += `
-  <div class="fare-box" id="fareBox">
-    <div style="display:flex; justify-content:center; margin-bottom:18px; background:#f1f5f9; border-radius:9999px; padding:4px; width:fit-content; margin-left:auto; margin-right:auto;">
-      <button onclick="toggleFareType(0)" id="tab-oct" 
-              style="background:#f59e0b; color:white; border:none; padding:9px 32px; border-radius:9999px; font-weight:700; font-size:1.05rem; transition:all 0.3s; cursor:pointer;">
-        八達通
+  <div class="fare-toggle-wrapper">
+    <div class="fare-toggle-container">
+      <!-- 八達通分頁 -->
+      <button class="fare-tab active oct" id="tab-oct" onclick="toggleFareType(0)">
+        <img src="8.webp" alt="Octopus">
+        <span>八達通</span>
       </button>
-      <button onclick="toggleFareType(1)" id="tab-tkt" 
-              style="background:transparent; color:#64748b; border:none; padding:9px 32px; border-radius:9999px; font-weight:700; font-size:1.05rem; transition:all 0.3s; cursor:pointer;">
-        單程票
+      
+      <!-- 單程票分頁 -->
+      <button class="fare-tab tkt" id="tab-tkt" onclick="toggleFareType(1)">
+        <img src="TI.jpg" alt="Ticket">
+        <span>單程票</span>
       </button>
     </div>
+  </div>
 
-    <div id="fareContent">
-      <div class="fare-grid">
-        <div class="fare-header">票種</div>
-        <div class="fare-header" id="fareHeader1">八達通</div>
-        <div class="fare-header" id="fareHeader2" style="display:none;">單程票</div>
-        
-        <div class="fare-row-title">成人</div>
-        <div class="fare-price price-oct" id="adultOct">${formatPrice(fares.adultOct)}</div>
-        <div class="fare-price price-tkt" id="adultTkt" style="display:none;">${formatPrice(fares.adultTkt)}</div>
-        
-        <div class="fare-row-title">小童 / 長者</div>
-        <div class="fare-price price-oct" id="childOct">${formatPrice(fares.childOct)}</div>
-        <div class="fare-price price-tkt" id="childTkt" style="display:none;">${formatPrice(fares.childTkt)}</div>
-      </div>
+  <div id="fareContent">
+    <div class="fare-grid">
+      <div class="fare-header">票種</div>
+      <div class="fare-header" id="fareHeader1">八達通</div>
+      <div class="fare-header" id="fareHeader2" style="display:none;">單程票</div>
+      
+      <div class="fare-row-title">成人</div>
+      <div class="fare-price price-oct" id="adultOct">${formatPrice(fares.adultOct)}</div>
+      <div class="fare-price price-tkt" id="adultTkt" style="display:none;">${formatPrice(fares.adultTkt)}</div>
+      
+      <div class="fare-row-title">小童 / 長者</div>
+      <div class="fare-price price-oct" id="childOct">${formatPrice(fares.childOct)}</div>
+      <div class="fare-price price-tkt" id="childTkt" style="display:none;">${formatPrice(fares.childTkt)}</div>
+    </div>
+  </div>
+
     </div>
     
     <small style="display:block; margin-top:0.8em; color:#6b7280; font-size:0.85rem;">
@@ -1174,7 +1247,7 @@ async function performPlan() {
   }, 800);
 }
 
-window.toggleFareType = function(type) { /* ... 與之前完全相同 ... */ 
+window.toggleFareType = function(type) {
   const tabOct = document.getElementById('tab-oct');
   const tabTkt = document.getElementById('tab-tkt');
   const header1 = document.getElementById('fareHeader1');
@@ -1183,21 +1256,21 @@ window.toggleFareType = function(type) { /* ... 與之前完全相同 ... */
   const tktPrices = document.querySelectorAll('.price-tkt');
   
   if (type === 0) {
-    tabOct.style.background = '#f59e0b';
-    tabOct.style.color = 'white';
-    tabTkt.style.background = 'transparent';
-    tabTkt.style.color = '#64748b';
+    // 切換按鈕狀態
+    tabOct.classList.add('active');
+    tabTkt.classList.remove('active');
 
+    // 顯示內容
     header1.style.display = 'block';
     header2.style.display = 'none';
     octPrices.forEach(el => el.style.display = 'block');
     tktPrices.forEach(el => el.style.display = 'none');
   } else {
-    tabTkt.style.background = '#64748b';
-    tabTkt.style.color = 'white';
-    tabOct.style.background = 'transparent';
-    tabOct.style.color = '#64748b';
+    // 切換按鈕狀態
+    tabTkt.classList.add('active');
+    tabOct.classList.remove('active');
 
+    // 顯示內容
     header1.style.display = 'none';
     header2.style.display = 'block';
     octPrices.forEach(el => el.style.display = 'none');
