@@ -1,0 +1,57 @@
+const FARE_MATRIX = {
+  // ==================== 南港島綫 South Island Line ====================
+  "ADM": { "OCP": { adult: 5.5, child: 2.8 }, "WCH": { adult: 7.0, child: 3.5 }, "LET": { adult: 8.5, child: 4.3 }, "SOH": { adult: 10.0, child: 5.0 }, "KET": { adult: 10.0, child: 5.0 }, "CEN": { adult: 5.0, child: 2.5 }, "TST": { adult: 6.0, child: 3.0 } },
+  "OCP": { "WCH": { adult: 5.0, child: 2.5 }, "LET": { adult: 6.5, child: 3.3 }, "SOH": { adult: 8.0, child: 4.0 }, "ADM": { adult: 5.5, child: 2.8 }, "CEN": { adult: 7.0, child: 3.5 } },
+  "WCH": { "LET": { adult: 5.0, child: 2.5 }, "SOH": { adult: 6.5, child: 3.3 }, "ADM": { adult: 7.0, child: 3.5 }, "OCP": { adult: 5.0, child: 2.5 } },
+  "LET": { "SOH": { adult: 5.0, child: 2.5 }, "ADM": { adult: 8.5, child: 4.3 }, "WCH": { adult: 5.0, child: 2.5 } },
+  "SOH": { "ADM": { adult: 10.0, child: 5.0 }, "OCP": { adult: 8.0, child: 4.0 }, "WCH": { adult: 6.5, child: 3.3 }, "LET": { adult: 5.0, child: 2.5 } },
+
+  // ==================== 荃灣綫 Tsuen Wan Line ====================
+  "CEN": { "ADM": { adult: 5.0, child: 2.5 }, "TST": { adult: 6.0, child: 3.0 }, "JOR": { adult: 6.5, child: 3.3 }, "YMT": { adult: 7.0, child: 3.5 }, "MOK": { adult: 8.0, child: 4.0 }, "PRE": { adult: 9.0, child: 4.5 }, "SSP": { adult: 9.5, child: 4.8 }, "CSW": { adult: 10.5, child: 5.3 }, "LCK": { adult: 11.0, child: 5.5 }, "MEF": { adult: 12.0, child: 6.0 }, "LAK": { adult: 13.0, child: 6.5 }, "KWF": { adult: 14.0, child: 7.0 }, "KWH": { adult: 14.5, child: 7.3 }, "TWH": { adult: 15.0, child: 7.5 }, "TSW": { adult: 15.5, child: 7.8 } },
+  "KWF": { "KWH": { adult: 4.5, child: 2.3 }, "TWH": { adult: 4.5, child: 2.3 }, "TSW": { adult: 5.0, child: 2.5 }, "CEN": { adult: 14.0, child: 7.0 } },
+  "KWH": { "TWH": { adult: 4.5, child: 2.3 }, "TSW": { adult: 4.8, child: 2.4 }, "KWF": { adult: 4.5, child: 2.3 } },
+  "TWH": { "TSW": { adult: 4.5, child: 2.3 }, "KWH": { adult: 4.5, child: 2.3 }, "KWF": { adult: 4.5, child: 2.3 } },
+  "TSW": { "CEN": { adult: 15.5, child: 7.8 }, "KWF": { adult: 5.0, child: 2.5 } },
+
+  // ==================== 觀塘綫 Kwun Tong Line ====================
+  "WHA": { "HOM": { adult: 5.0, child: 2.5 }, "YMT": { adult: 6.0, child: 3.0 }, "MOK": { adult: 7.0, child: 3.5 }, "PRE": { adult: 8.0, child: 4.0 }, "SKM": { adult: 9.0, child: 4.5 }, "KOT": { adult: 10.0, child: 5.0 }, "LOF": { adult: 11.0, child: 5.5 }, "WTS": { adult: 12.0, child: 6.0 }, "DIH": { adult: 13.0, child: 6.5 }, "CHH": { adult: 13.5, child: 6.8 }, "KOB": { adult: 14.0, child: 7.0 }, "NTK": { adult: 14.5, child: 7.3 }, "KWT": { adult: 15.0, child: 7.5 }, "LAT": { adult: 16.0, child: 8.0 }, "YAT": { adult: 17.0, child: 8.5 }, "TIK": { adult: 18.0, child: 9.0 }, "CEN": { adult: 7.0, child: 3.5 }, "TST": { adult: 6.0, child: 3.0 } },
+  "HOM": { "YMT": { adult: 5.0, child: 2.5 }, "MOK": { adult: 6.0, child: 3.0 }, "PRE": { adult: 7.0, child: 3.5 }, "KOT": { adult: 9.0, child: 4.5 }, "TIK": { adult: 17.0, child: 8.5 }, "CEN": { adult: 8.0, child: 4.0 } },
+  "YMT": { "MOK": { adult: 5.0, child: 2.5 }, "PRE": { adult: 6.0, child: 3.0 }, "TIK": { adult: 16.0, child: 8.0 } },
+  "TIK": { "CEN": { adult: 18.0, child: 9.0 }, "WHA": { adult: 18.0, child: 9.0 } },
+
+  // ==================== 將軍澳綫 Tseung Kwan O Line ====================
+  "NOP": { "QUB": { adult: 5.0, child: 2.5 }, "YAT": { adult: 7.0, child: 3.5 }, "TIK": { adult: 8.5, child: 4.3 }, "TKO": { adult: 9.5, child: 4.8 }, "LHP": { adult: 11.0, child: 5.5 }, "HAH": { adult: 12.0, child: 6.0 }, "POA": { adult: 13.0, child: 6.5 }, "CEN": { adult: 12.0, child: 6.0 }, "TST": { adult: 11.0, child: 5.5 } },
+  "QUB": { "YAT": { adult: 6.0, child: 3.0 }, "TIK": { adult: 7.5, child: 3.8 }, "TKO": { adult: 8.5, child: 4.3 }, "LHP": { adult: 10.0, child: 5.0 }, "HAH": { adult: 11.0, child: 5.5 }, "POA": { adult: 12.0, child: 6.0 } },
+  "YAT": { "TIK": { adult: 5.0, child: 2.5 }, "TKO": { adult: 6.0, child: 3.0 }, "LHP": { adult: 8.0, child: 4.0 }, "HAH": { adult: 9.0, child: 4.5 }, "POA": { adult: 10.0, child: 5.0 } },
+  "TIK": { "TKO": { adult: 5.0, child: 2.5 }, "LHP": { adult: 7.0, child: 3.5 }, "HAH": { adult: 8.0, child: 4.0 }, "POA": { adult: 9.0, child: 4.5 } },
+  "TKO": { "LHP": { adult: 5.5, child: 2.8 }, "HAH": { adult: 6.5, child: 3.3 }, "POA": { adult: 7.5, child: 3.8 } },
+  "LHP": { "HAH": { adult: 5.0, child: 2.5 }, "POA": { adult: 6.0, child: 3.0 } },
+  "HAH": { "POA": { adult: 5.0, child: 2.5 } },
+
+  // ==================== 東涌 / 迪士尼綫 ====================
+  "HOK": { "KOW": { adult: 6.0, child: 3.0 }, "OLY": { adult: 10.0, child: 5.0 }, "NAC": { adult: 12.0, child: 6.0 }, "LAK": { adult: 13.0, child: 6.5 }, "TSY": { adult: 15.0, child: 7.5 }, "SUN": { adult: 18.0, child: 9.0 }, "TUC": { adult: 20.0, child: 10.0 }, "DIS": { adult: 22.0, child: 11.0 }, "CEN": { adult: 6.0, child: 3.0 }, "TST": { adult: 7.0, child: 3.5 } },
+  "OLY": { "NAC": { adult: 5.5, child: 2.8 }, "LAK": { adult: 6.0, child: 3.0 }, "TSY": { adult: 8.0, child: 4.0 }, "SUN": { adult: 11.0, child: 5.5 }, "TUC": { adult: 13.0, child: 6.5 }, "DIS": { adult: 15.0, child: 7.5 } },
+  "NAC": { "LAK": { adult: 4.5, child: 2.3 }, "TSY": { adult: 6.5, child: 3.3 }, "SUN": { adult: 9.5, child: 4.8 }, "TUC": { adult: 11.5, child: 5.8 }, "DIS": { adult: 13.5, child: 6.8 } },
+  "LAK": { "TSY": { adult: 5.0, child: 2.5 }, "SUN": { adult: 8.0, child: 4.0 }, "TUC": { adult: 10.0, child: 5.0 }, "DIS": { adult: 12.0, child: 6.0 } },
+  "TSY": { "SUN": { adult: 6.0, child: 3.0 }, "TUC": { adult: 8.0, child: 4.0 }, "DIS": { adult: 10.0, child: 5.0 } },
+  "SUN": { "TUC": { adult: 6.0, child: 3.0 }, "DIS": { adult: 6.0, child: 3.0 } },
+  "TUC": { "DIS": { adult: 10.0, child: 5.0 } },
+
+  // ==================== 東鐵綫 East Rail Line ====================
+  "ADM": { "EXC": { adult: 5.5, child: 2.8 }, "HUH": { adult: 10.0, child: 5.0 }, "MKK": { adult: 11.0, child: 5.5 }, "KOT": { adult: 12.0, child: 6.0 }, "TAW": { adult: 13.5, child: 6.8 }, "SHT": { adult: 15.0, child: 7.5 }, "FOT": { adult: 16.0, child: 8.0 }, "RAC": { adult: 17.0, child: 8.5 }, "UNI": { adult: 18.0, child: 9.0 }, "TAP": { adult: 19.5, child: 9.8 }, "TWO": { adult: 20.5, child: 10.3 }, "FAN": { adult: 22.0, child: 11.0 }, "SHS": { adult: 23.5, child: 11.8 }, "LOW": { adult: 25.0, child: 12.5 }, "LMC": { adult: 26.0, child: 13.0 }, "CEN": { adult: 5.5, child: 2.8 }, "TST": { adult: 11.0, child: 5.5 } },
+  "HUH": { "MKK": { adult: 5.5, child: 2.8 }, "KOT": { adult: 6.5, child: 3.3 }, "LMC": { adult: 20.0, child: 10.0 } },
+  "LMC": { "ADM": { adult: 26.0, child: 13.0 }, "HUH": { adult: 20.0, child: 10.0 } },
+
+  // ==================== 屯馬綫 Tuen Ma Line ====================
+  "NAC": { "HEO": { adult: 9.5, child: 4.8 }, "MEF": { adult: 5.5, child: 2.8 }, "TWW": { adult: 8.0, child: 4.0 }, "KSR": { adult: 12.0, child: 6.0 }, "YUL": { adult: 15.0, child: 7.5 }, "CEN": { adult: 12.0, child: 6.0 }, "TST": { adult: 11.0, child: 5.5 } },
+  "HEO": { "NAC": { adult: 9.5, child: 4.8 }, "MEF": { adult: 6.5, child: 3.3 } },
+  "MEF": { "TWW": { adult: 6.0, child: 3.0 }, "KSR": { adult: 10.0, child: 5.0 }, "YUL": { adult: 13.0, child: 6.5 }, "NAC": { adult: 5.5, child: 2.8 } },
+  "TWW": { "KSR": { adult: 7.0, child: 3.5 }, "YUL": { adult: 10.0, child: 5.0 } },
+  "KSR": { "YUL": { adult: 6.0, child: 3.0 } }
+};
+
+// ====================== 網站使用方式（最簡單正確） ======================
+function getFare(origin, destination) {
+  const fare = FARE_MATRIX[origin]?.[destination];
+  return fare ? { adult: fare.adult, child: fare.child } : null;
+}
