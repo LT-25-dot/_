@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -48,6 +49,134 @@
     #section1, #section2, #section3 {
       padding: 20px;
     }
+
+    /* ==================== 新增：三劃 Hamburger 按鈕 + 抽屜式選單 ==================== */
+    .hamburger {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 1000;
+      background: none;
+      border: none;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 8px;
+      transition: all 0.3s ease;
+    }
+    .hamburger:hover {
+      transform: scale(1.08);
+    }
+    .hamburger span {
+      display: block;
+      width: 28px;
+      height: 3px;
+      background: var(--theme-color);
+      border-radius: 3px;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hamburger span:nth-child(1) { transform: translateY(-8px); }
+    .hamburger span:nth-child(2) { }
+    .hamburger span:nth-child(3) { transform: translateY(8px); }
+
+    .hamburger.open span:nth-child(1) {
+      transform: translateY(0) rotate(45deg);
+    }
+    .hamburger.open span:nth-child(2) {
+      opacity: 0;
+      transform: translateY(0);
+    }
+    .hamburger.open span:nth-child(3) {
+      transform: translateY(0) rotate(-45deg);
+    }
+
+    /* 抽屜式選單 */
+    .side-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 280px;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: 4px 0 25px rgba(0,0,0,0.25);
+      transform: translateX(-100%);
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 2000;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .side-drawer.open {
+      transform: translateX(0);
+    }
+    .drawer-header {
+      padding: 0 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 15px;
+    }
+    .drawer-header h3 {
+      margin: 0;
+      color: var(--theme-color);
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .drawer-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 4px 10px;
+      line-height: 1;
+    }
+    .drawer-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .drawer-menu li {
+      padding: 14px 25px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .drawer-menu li:hover {
+      background: #f8fafc;
+    }
+    .drawer-menu li:active {
+      background: #f1f5f9;
+    }
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 1999;
+    }
+    .drawer-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 原有 back-btn 樣式（僅 section1 使用） */
     .back-btn, .back-to-map {
       position: absolute;
       top: 12px;
@@ -69,6 +198,7 @@
       filter: brightness(85%);
       transform: translateY(-1px);
     }
+
     h1 {
       color: var(--theme-color);
       text-align: center;
@@ -327,7 +457,6 @@
       border-radius: 8px;
       border: 1px solid #bae6fd;
     }
-    /* 票價切換器容器 */
     .fare-toggle-wrapper {
       display: flex;
       justify-content: center;
@@ -412,7 +541,6 @@
       100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
     }
 
-    /* 右上角純位置圖標按鈕 */
     .gps-icon-btn {
       position: absolute;
       top: 12px;
@@ -440,7 +568,6 @@
       transform: scale(0.95);
     }
 
-    /* 最近車站資訊 */
     .nearest-banner {
       margin: 12px 0;
       padding: 12px 16px;
@@ -459,12 +586,10 @@
       color: #052e16;
     }
 
-    /* ====================== 加速帶路線動畫樣式 ====================== */
     .route-speed-belt {
       animation: speed-belt-glow 2s ease-in-out infinite;
     }
 
-    /* ====================== 路線規劃緊湊佈局 ====================== */
     .plan-header {
       display: flex;
       align-items: center;
@@ -477,7 +602,7 @@
       flex: 1;
       text-align: center;
       font-size: 1.55rem;
-      padding-left: 48px; /* 為返回按鈕留空間 */
+      padding-left: 48px;
     }
     .plan-route {
       display: flex;
@@ -506,98 +631,42 @@
       margin: 8px 0 20px;
     }
 
-    /* ====================== 手機專用更緊湊佈局 ====================== */
     @media (max-width: 560px) {
       #section1, #section2, #section3 { padding: 10px; }
       h1 { font-size: 1.45rem; margin-top: 48px; }
-      .controls { 
-        gap: 6px; 
-        margin: 0.7em 0; 
-      }
-      select, button {
-        padding: 9px 10px;
-        font-size: 0.95rem;
-        width: 48%;
-        flex-grow: 1;
-        min-height: 46px;
-      }
+      .controls { gap: 6px; margin: 0.7em 0; }
+      select, button { padding: 9px 10px; font-size: 0.95rem; width: 48%; flex-grow: 1; min-height: 46px; }
       button { width: auto; }
-      .bus-stop {
-        margin: 0.75em 0;
-        padding: 0.95em;
-      }
-      .bus-item { 
-        gap: 8px; 
-        padding: 8px 0; 
-      }
-      .bus-time { 
-        font-size: 1.2rem; 
-      }
-      .plat { 
-        font-size: 0.8rem;
-        padding: 4px 9px;
-      }
-      .stop-name {
-        font-size: 1.1rem;
-        margin-bottom: 0.55em;
-      }
-      #map { 
-        min-height: 360px; 
-      }
-      .fare-grid { 
-        padding: 11px; 
-      }
-      .fare-price { 
-        font-size: 1.22rem; 
-      }
-      .nearest-banner { 
-        font-size: 0.98rem; 
-        padding: 11px 14px; 
-        margin: 10px 0; 
-      }
-      .gps-icon-btn { 
-        width: 46px; 
-        height: 46px; 
-        font-size: 24px; 
-        top: 10px; 
-        right: 10px; 
-      }
-      .status {
-        font-size: 0.9rem;
-      }
-      .route-title {
-        font-size: 1.28rem;
-      }
-      .map-note {
-        font-size: 0.8rem;
-      }
-      .fare-tab {
-        padding: 8px 18px;
-      }
-      .fare-tab span {
-        font-size: 0.94rem;
-      }
-      .plan-header h1 {
-        font-size: 1.4rem;
-      }
-      .plan-route {
-        gap: 10px;
-      }
-      .plan-arrow {
-        font-size: 2rem;
-        margin-top: 36px;
-      }
+      .bus-stop { margin: 0.75em 0; padding: 0.95em; }
+      .bus-item { gap: 8px; padding: 8px 0; }
+      .bus-time { font-size: 1.2rem; }
+      .plat { font-size: 0.8rem; padding: 4px 9px; }
+      .stop-name { font-size: 1.1rem; margin-bottom: 0.55em; }
+      #map { min-height: 360px; }
+      .fare-grid { padding: 11px; }
+      .fare-price { font-size: 1.22rem; }
+      .nearest-banner { font-size: 0.98rem; padding: 11px 14px; margin: 10px 0; }
+      .gps-icon-btn { width: 46px; height: 46px; font-size: 24px; top: 10px; right: 10px; }
+      .status { font-size: 0.9rem; }
+      .route-title { font-size: 1.28rem; }
+      .map-note { font-size: 0.8rem; }
+      .fare-tab { padding: 8px 18px; }
+      .fare-tab span { font-size: 0.94rem; }
+      .plan-header h1 { font-size: 1.4rem; }
+      .plan-route { gap: 10px; }
+      .plan-arrow { font-size: 2rem; margin-top: 36px; }
+      .hamburger { top: 10px; left: 10px; width: 46px; height: 46px; }
     }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-  <!-- 以下內容與你提供的檔案完全相同（未做任何修改） -->
+  <!-- ====================== section1 ====================== -->
   <div id="section1" class="section">
     <a href="index.html" class="back-btn">← 返回</a>
     
-    <!-- 右上角純位置圖標（無任何文字） -->
+    <!-- 右上角純位置圖標 -->
     <button id="gps-btn" class="gps-icon-btn" title="偵測我的位置" onclick="requestUserLocation()">
       📍
     </button>
@@ -616,7 +685,6 @@
       <button class="plan-btn" id="btnToPlan" onclick="document.getElementById('section3').scrollIntoView({behavior:'smooth'});">🗺️ 路線規劃 →</button>
     </div>
 
-    <!-- 最近車站資訊（取得位置後才顯示） -->
     <div id="nearest-banner" class="nearest-banner" style="display: none;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:1.4rem;">📍</span>
@@ -639,10 +707,15 @@
     </div>
   </div>
   
+  <!-- ====================== section2 ====================== -->
   <div id="section2" class="section">
-    <button class="back-btn back-to-map" onclick="document.getElementById('section1').scrollIntoView({behavior:'smooth'});">
-      ← 返回首頁
+    <!-- 替換成 Hamburger 三劃按鈕 -->
+    <button id="hamburger-section2" class="hamburger" onclick="toggleDrawer()">
+      <span></span>
+      <span></span>
+      <span></span>
     </button>
+    
     <div id="result">
       <div class="no-service" style="padding-top: 100px;">
         尚未選擇任何車站<br>
@@ -652,17 +725,19 @@
     <div class="footer-remark" id="footerRemark" style="display:none"></div>
   </div>
   
-  <!-- ====================== 路線規劃區塊（全新緊湊佈局） ====================== -->
+  <!-- ====================== section3 ====================== -->
   <div id="section3" class="section">
     <div class="plan-header">
-      <button class="back-btn back-to-map" onclick="document.getElementById('section1').scrollIntoView({behavior:'smooth'});">
-        ← 返回首頁
+      <!-- 替換成 Hamburger 三劃按鈕 -->
+      <button id="hamburger-section3" class="hamburger" onclick="toggleDrawer()">
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
       <h1>路線規劃指南</h1>
     </div>
 
     <div class="plan-route">
-      <!-- 出發地 -->
       <div class="plan-side">
         <h2 class="plan-subtitle">出發地</h2>
         <div class="controls">
@@ -675,10 +750,8 @@
         </div>
       </div>
 
-      <!-- 中間箭頭 -->
       <div class="plan-arrow">→</div>
 
-      <!-- 目的地 -->
       <div class="plan-side">
         <h2 class="plan-subtitle">目的地</h2>
         <div class="controls">
@@ -706,6 +779,29 @@
       </div>
     </div>
   </div>
+
+  <!-- ====================== 抽屜式選單（全域） ====================== -->
+  <div id="side-drawer" class="side-drawer">
+    <div class="drawer-header">
+      <h3>MTR 即時</h3>
+      <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+    </div>
+    <ul class="drawer-menu">
+      <li onclick="goToSection(1); toggleDrawer();">
+        <span style="font-size:1.4rem;">🏠</span>
+        <span>返回首頁</span>
+      </li>
+      <li onclick="goToSection(3); toggleDrawer();">
+        <span style="font-size:1.4rem;">🗺️</span>
+        <span>路線規劃</span>
+      </li>
+      <li onclick="window.location.href='index.html'; toggleDrawer();">
+        <span style="font-size:1.4rem;">🔙</span>
+        <span>返回主頁（index.html）</span>
+      </li>
+    </ul>
+  </div>
+  <div id="drawer-overlay" class="drawer-overlay" onclick="toggleDrawer()"></div>
 
 <script>
 // ====================== 所有核心程式碼（與你提供的完全相同） ======================
@@ -1648,6 +1744,42 @@ initMap();
 loadOfficialFares();
 
 console.log("🚀 MTR 到站時間查詢 — PWA 已啟用（橙色列車快捷圖標）");
+
+// ====================== 新增：抽屜式選單功能 ======================
+function toggleDrawer() {
+  const drawer = document.getElementById('side-drawer');
+  const overlay = document.getElementById('drawer-overlay');
+  const hamburgers = document.querySelectorAll('.hamburger');
+
+  const isOpen = drawer.classList.contains('open');
+
+  if (isOpen) {
+    drawer.classList.remove('open');
+    overlay.classList.remove('show');
+    hamburgers.forEach(h => h.classList.remove('open'));
+  } else {
+    drawer.classList.add('open');
+    overlay.classList.add('show');
+    hamburgers.forEach(h => h.classList.add('open'));
+  }
+}
+
+function goToSection(section) {
+  const target = document.getElementById(`section${section}`);
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+// ESC 鍵關閉抽屜
+document.addEventListener('keydown', function(e) {
+  if (e.key === "Escape") {
+    const drawer = document.getElementById('side-drawer');
+    if (drawer && drawer.classList.contains('open')) {
+      toggleDrawer();
+    }
+  }
+});
 
 window.addEventListener('beforeunload', () => {
   if (watchId) navigator.geolocation.clearWatch(watchId);
