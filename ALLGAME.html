@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🕹️ 霓虹遊戲廳</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a001f, #1a0033);
+            color: #fff;
+            font-family: 'Press Start 2P', system-ui;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 255, 200, 0.15), transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 4px solid rgba(0, 255, 200, 0.4);
+            padding: 40px 30px;
+            box-shadow: 0 0 80px rgba(0, 255, 200, 0.5),
+                        inset 0 0 40px rgba(255,255,255,0.1);
+            max-width: 1100px;
+            width: 95%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 3.2rem;
+            text-shadow: 0 0 20px #00ffcc,
+                         0 0 40px #00ffcc,
+                         0 0 60px #ff00cc;
+            letter-spacing: 8px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            text-shadow: 0 0 10px #00ffcc;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+        
+        .game-card {
+            background: rgba(10, 5, 30, 0.85);
+            border: 4px solid #00ffcc;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(0, 255, 200, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 0 60px rgba(0, 255, 200, 0.8);
+            border-color: #ff00cc;
+        }
+        
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 60%;
+            height: 60%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(30deg);
+            opacity: 0;
+            transition: all 0.6s;
+        }
+        
+        .game-card:hover::before {
+            opacity: 1;
+            top: -20%;
+            left: -20%;
+        }
+        
+        .game-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            display: block;
+            filter: drop-shadow(0 0 20px currentColor);
+        }
+        
+        .game-title {
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            text-shadow: 0 0 15px #00ffcc;
+            color: #00ffcc;
+        }
+        
+        .game-desc {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            min-height: 70px;
+        }
+        
+        .play-btn {
+            font-family: 'Press Start 2P';
+            font-size: 1.1rem;
+            padding: 16px 40px;
+            background: linear-gradient(#ff00aa, #cc0088);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 8px 0 #880055;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .play-btn:hover {
+            background: linear-gradient(#ff33bb, #ee0099);
+        }
+        
+        .play-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #880055;
+        }
+        
+        /* 卡片專屬顏色 */
+        .card-snake .game-icon { color: #00ffcc; }
+        .card-dino .game-icon { color: #ff8800; }
+        .card-2048 .game-icon { color: #aa00ff; }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            opacity: 0.6;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 標題 -->
+        <div class="header">
+            <h1>🕹️ 霓虹遊戲廳</h1>
+            <p>選擇你的挑戰 • 經典復古風 • 霓虹無限樂趣</p>
+        </div>
+
+        <!-- 三個遊戲卡片 -->
+        <div class="games-grid">
+            
+            <!-- 遊戲 1: 超級貪食蛇 -->
+            <div class="game-card card-snake">
+                <div class="game-icon">🐍</div>
+                <div class="game-title">超級貪食蛇</div>
+                <div class="game-desc">
+                    經典貪食蛇重製版<br>
+                    挑戰最高分！
+                </div>
+                <a href="GAME1.html" target="_blank">
+                    <button class="play-btn">開始遊玩 →</button>
+                </a>
+            </div>
+
+            <!-- 遊戲 2: 像素恐龍跳躍 -->
+            <div class="game-card card-dino">
+                <div class="game-icon">🦕</div>
+                <div class="game-title">像素恐龍跳躍</div>
+                <div class="game-desc">
+                    Google 經典遊戲<br>
+                    考驗你的反應力！
+                </div>
+                <a href="GAME2.html" target="_blank">
+                    <button class="play-btn">開始遊玩 →</button>
+                </a>
+            </div>
+
+            <!-- 遊戲 3: 霓虹2048（已替換成簡單版） -->
+            <div class="game-card card-2048">
+                <div class="game-icon">🔢</div>
+                <div class="game-title">霓虹2048</div>
+                <div class="game-desc">
+                    超簡單數字合成遊戲<br>
+                    達到2048就勝利！<br>
+                </div>
+                <a href="GAME3.html" target="_blank">
+                    <button class="play-btn">開始遊玩 →</button>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer">
+            霓虹遊戲廳 v1.0 • 由你親手打造的復古遊戲天堂<br>
+            儲存此檔案為 <strong>index.html</strong>，再分別建立 snake.html、dino.html、2048.html 即可遊玩
+        </div>
+    </div>
+</body>
+</html>
