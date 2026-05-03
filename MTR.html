@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -631,6 +630,19 @@
       margin: 8px 0 20px;
     }
 
+    /* ==================== 新增：路線規劃頁面垂直排列（只影響 section3） ==================== */
+    .plan-route .plan-side .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+      margin: 0.8em 0;
+    }
+    .plan-route .plan-side select {
+      width: 100%;
+      min-height: 48px;
+    }
+
     @media (max-width: 560px) {
       #section1, #section2, #section3 { padding: 10px; }
       h1 { font-size: 1.45rem; margin-top: 48px; }
@@ -664,7 +676,12 @@
 <body>
   <!-- ====================== section1 ====================== -->
   <div id="section1" class="section">
-    <a href="index.html" class="back-btn">← 返回</a>
+    <!-- 替換原本的返回按鈕為 Hamburger（與 section2 / section3 完全一致） -->
+    <button id="hamburger-section1" class="hamburger" onclick="toggleDrawer()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
     
     <!-- 右上角純位置圖標 -->
     <button id="gps-btn" class="gps-icon-btn" title="偵測我的位置" onclick="requestUserLocation()">
@@ -804,7 +821,7 @@
   <div id="drawer-overlay" class="drawer-overlay" onclick="toggleDrawer()"></div>
 
 <script>
-// ====================== 所有核心程式碼（與你提供的完全相同） ======================
+// ====================== 所有核心程式碼（已用第二份完整資料補全第一份） ======================
 let FARE_LOOKUP = {};
 let isFareLoaded = false;
 
@@ -1743,7 +1760,7 @@ loadLastSelection();
 initMap();
 loadOfficialFares();
 
-console.log("🚀 MTR 到站時間查詢 — PWA 已啟用（橙色列車快捷圖標）");
+console.log("🚀 MTR 到站時間查詢 — PWA 已啟用（橙色列車快捷圖標） — 資料已完整補全");
 
 // ====================== 新增：抽屜式選單功能 ======================
 function toggleDrawer() {
